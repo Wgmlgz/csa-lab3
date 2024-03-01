@@ -1,0 +1,13 @@
+{
+  "name": "csa-lab3",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "python ./src/main.py ./examples/sus/test.lsp -d -r",
+    "dev": "python ./src/main.py ./examples/bin/hi.json -r"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
