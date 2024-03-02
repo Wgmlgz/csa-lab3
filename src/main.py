@@ -10,7 +10,7 @@ class Susser:
     pass
 
 USAGE_STR = '''
-Usage: python <script-path> <input-file> [-d/--debug] [-r/--run]
+Usage: python <script-path> <input-file> [-d/--debug] [-r/--run] [-c/--run]
   Flags:
     -d/--debug enables debug output
 '''
@@ -24,7 +24,10 @@ def main():
     config['debug'] = True
   if ('-r' in sys.argv) or ('--run' in sys.argv):
     config['run'] = True
-    config['compile'] = False
+  if ('-c' in sys.argv) or ('--compile' in sys.argv):
+    config['compile'] = True
+  if ('-i' in sys.argv) or ('--interactive' in sys.argv):
+    config['interactive'] = True
   
   if config['debug']:
     print('argument list', sys.argv)
@@ -32,23 +35,34 @@ def main():
   file_path = sys.argv[1]
   
   try:
+    machine = Machine()
+    machine.memory.set(0, 0x00_00_00_01_00_00_00_00.to_bytes(8))
+    
     if config['compile']:
       mod = Module(file_path)
-    if config['run']:
-      machine = Machine()
-      machine.memory.set(0, 0x00_00_00_01_00_00_00_00.to_bytes(8))
-      # machine.memory.set(0, )
+      executable = mod.exe
+      dict = executable.to_dict()
+      machine.memory.load_instructions(dict['instructions'])
       
+    elif config['run']:
       machine.memory.load_json(file_path)
+    
+  
+      
+    if config['run']:
+      if config['debug']:
+        print(machine)
       runner = Runner(machine)
       runner.run()
-      print(runner.m.stdout.data, end='')
-    if config['debug']:
-      print(machine)
+      print(runner.m.stdout.data)
+      if config['debug']:
+        print(machine)
     
   except Exception as err:
     print(f'Compilation failed occurred:')
-    print(err.with_traceback())
+    print(err)
+    if config['debug']:
+      print(err.with_traceback())
     exit(1)
     
     

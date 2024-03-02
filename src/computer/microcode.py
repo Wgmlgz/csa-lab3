@@ -12,6 +12,7 @@ class CS(enumerate):
     in_ip = auto()
     in_io = auto()
     in_mem = auto()
+    in_stack = auto()
 
     out_flags = auto()
 
@@ -21,12 +22,18 @@ class CS(enumerate):
     out_ip = auto()
     out_io = auto()
     out_mem = auto()
+    out_stack = auto()
 
     inc = auto()
     inc_8 = auto()
+    dec_8 = auto()
     dec = auto()
     add_u64 = auto()
-
+    invert = auto()
+    invert_bool = auto()
+    
+    if_out = auto()
+    
 
 class Microcode:
     cs: list[list[CS]]

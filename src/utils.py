@@ -1,7 +1,8 @@
 config = {
     'debug': False,
-    'compile': True,
-    'run': False
+    'compile': False,
+    'run': False,
+    'interactive': False
 }
 
 

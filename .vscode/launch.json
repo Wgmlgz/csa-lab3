@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "/Users/wgmlgz/csa-lab3/src/main.py",
       "console": "integratedTerminal",
-      "args": "./examples/test.lsp -d"
+      "args": "./examples/sus/test.lsp -c -d -r"
     }
   ]
 }

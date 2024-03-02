@@ -1,5 +1,5 @@
 import json
-from computer.instructions import tag_by_opcode
+from computer.instructions import any_to_arg, tag_by_opcode
 
 class Memory:
     content: bytes
@@ -9,26 +9,25 @@ class Memory:
         self.n = len
         self.content = bytearray(len)
 
+    def load_instructions(self, instructions: list[list]):
+        idx = 0
+        for j_instruction in instructions:
+            tag = tag_by_opcode.get(j_instruction[0])
+            arg = 0
+            if len(j_instruction) > 1:
+                arg = j_instruction[1]
+            arg = any_to_arg(arg)
+
+            instruction = tag.to_bytes(4) + arg
+            self.set(idx, instruction)
+            idx += 8
+            
     def load_json(self, p: str):
         with open(p) as f:
             data = json.load(f)  # ok
             instructions = data['instructions']
+            self.load_instructions(instructions)
             
-            idx = 0
-            for j_instruction in instructions:
-                tag = tag_by_opcode.get(j_instruction[0])
-                arg = 0
-                if len(j_instruction) > 1:
-                    arg = j_instruction[1]
-                if isinstance(arg, int):
-                    arg = arg.to_bytes(4)
-                if isinstance(arg, str):
-                    if len(arg) < 4: arg = (4 - len(arg)) * '\0' + arg
-                    arg = arg[:4]
-                    arg = str.encode(arg)
-                instruction = tag.to_bytes(4) + arg
-                self.set(idx, instruction)
-                idx += 8
             
     def get(self, idx: int, size=8) -> bytes:
         if idx + size > self.n:
@@ -44,7 +43,7 @@ class Memory:
     def to_str_chunk(self, begin=0, len=0x40) -> str:
         s = ""
         chunk = 8
-        s += '\n'.join([f'{hex(begin + i * chunk):6}' + ':' + self.content[begin + i * chunk: (i + 1) * chunk].hex()
+        s += '\n'.join([f'{hex(begin + i * chunk):6}' + ':' + self.content[begin + i * chunk: begin + (i + 1) * chunk].hex()
                         for i in range(len // chunk)])
         return s
         # return f"MEM:{self.content}"

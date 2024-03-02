@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "python ./src/main.py ./examples/sus/test.lsp -d -r",
+    "compile-dev": "python ./src/main.py ./examples/sus/test.lsp -d",
+    "compile": "python ./src/main.py ./examples/sus/test.lsp",
     "dev": "python ./src/main.py ./examples/bin/hi.json -r"
   },
   "keywords": [],

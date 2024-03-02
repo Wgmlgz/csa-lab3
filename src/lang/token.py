@@ -25,8 +25,8 @@ tokens_def = [
   (r"\(", TokenType.OPEN),
   (r"\)", TokenType.CLOSE),
   (r"\"[^\"]*\"", TokenType.STR),
-  (r"d+", TokenType.INT),
-  (r"[^\s\(\)]+", TokenType.ID),
+  (r"\d+", TokenType.INT),
+  (r"[^\s\(\)\d][^\s\(\)]*", TokenType.ID),
 ]
 tokens_pattern = '|'.join([f'({p})' for p, _ in tokens_def])
 

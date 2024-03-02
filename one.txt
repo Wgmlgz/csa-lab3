@@ -1,0 +1,498 @@
+Debug output enabled.
+argument list ['./src/main.py', './examples/sus/test.lsp', '-c', '-r', '-d']
+Tokenizing: (
+  (setq c (if 1 70 71))
+
+  
+  (stack_get c)
+  (out 1)
+  (halt)
+)
+[`(`.TokenType.OPEN@0,
+ `(`.TokenType.OPEN@1,
+ `setq`.TokenType.ID@5,
+ `c`.TokenType.ID@9,
+ `(`.TokenType.OPEN@11,
+ `if`.TokenType.ID@13,
+ `1`.TokenType.INT@15,
+ `70`.TokenType.INT@17,
+ `71`.TokenType.INT@20,
+ `)`.TokenType.CLOSE@23,
+ `)`.TokenType.CLOSE@24,
+ `(`.TokenType.OPEN@25,
+ `stack_get`.TokenType.ID@33,
+ `c`.TokenType.ID@42,
+ `)`.TokenType.CLOSE@44,
+ `(`.TokenType.OPEN@45,
+ `out`.TokenType.ID@49,
+ `1`.TokenType.INT@52,
+ `)`.TokenType.CLOSE@54,
+ `(`.TokenType.OPEN@55,
+ `halt`.TokenType.ID@59,
+ `)`.TokenType.CLOSE@63,
+ `)`.TokenType.CLOSE@64]
+Exp:
+  Exp:
+    Id(setq)
+    Id(c)
+    Exp:
+      Id(if)
+      Int(1)
+      Int(70)
+      Int(71)
+  Exp:
+    Id(stack_get)
+    Id(c)
+  Exp:
+    Id(out)
+    Int(1)
+  Exp:
+    Id(halt)
+compiled, unresolved:
+Block -> ()[0] at o.1
+  Scope:
+    c: u64[8] at o.2
+[
+  Block -> u64[8] at o.2
+    EmptyScope
+  [
+    Block -> u64[8] at o.3
+      EmptyScope
+    [
+      Block -> u64[8] at o.4
+        EmptyScope
+      [
+        cmd->acc o.5:b'\x00\x00\x00\x01'
+        stack_set o.4
+      ]
+      stack_get o.4
+      jmp_if_false o.10
+      Block -> u64[8] at o.6
+        EmptyScope
+      [
+        cmd->acc o.7:b'\x00\x00\x00F'
+        stack_set o.6
+      ]
+      stack_get o.6
+      stack_set o.3
+      o.10
+      Block -> u64[8] at o.8
+        EmptyScope
+      [
+        cmd->acc o.9:b'\x00\x00\x00G'
+        stack_set o.8
+      ]
+      stack_get o.8
+      stack_set o.3
+    ]
+    stack_get o.3
+    stack_set o.2
+  ]
+  stack_get o.2
+  out o.11:b'\x00\x00\x00\x01'
+  halt
+]
+compiled, resolved:
+Block -> ()[0] at o.1:b'\x00\x00\x00\x00'
+  Scope:
+    c: u64[8] at o.2:b'\xff\xff\xff\xf8'
+[
+  Block -> u64[8] at o.2:b'\xff\xff\xff\xf8'
+    EmptyScope
+  [
+    Block -> u64[8] at o.3:b'\xff\xff\xff\xf0'
+      EmptyScope
+    [
+      Block -> u64[8] at o.4:b'\xff\xff\xff\xe8'
+        EmptyScope
+      [
+        cmd->acc o.5:b'\x00\x00\x00\x01'
+        stack_set o.4:b'\xff\xff\xff\xe8'
+      ]
+      stack_get o.4:b'\xff\xff\xff\xe8'
+      jmp_if_false o.10
+      Block -> u64[8] at o.6:b'\xff\xff\xff\xe0'
+        EmptyScope
+      [
+        cmd->acc o.7:b'\x00\x00\x00F'
+        stack_set o.6:b'\xff\xff\xff\xe0'
+      ]
+      stack_get o.6:b'\xff\xff\xff\xe0'
+      stack_set o.3:b'\xff\xff\xff\xf0'
+      o.10
+      Block -> u64[8] at o.8:b'\xff\xff\xff\xd8'
+        EmptyScope
+      [
+        cmd->acc o.9:b'\x00\x00\x00G'
+        stack_set o.8:b'\xff\xff\xff\xd8'
+      ]
+      stack_get o.8:b'\xff\xff\xff\xd8'
+      stack_set o.3:b'\xff\xff\xff\xf0'
+    ]
+    stack_get o.3:b'\xff\xff\xff\xf0'
+    stack_set o.2:b'\xff\xff\xff\xf8'
+  ]
+  stack_get o.2:b'\xff\xff\xff\xf8'
+  out o.11:b'\x00\x00\x00\x01'
+  halt
+]
+compiled, resolved, unlinked:
+[cmd->acc o.5:b'\x00\x00\x00\x01',
+ stack_set o.4:b'\xff\xff\xff\xe8',
+ stack_get o.4:b'\xff\xff\xff\xe8',
+ jmp_if_false o.10,
+ cmd->acc o.7:b'\x00\x00\x00F',
+ stack_set o.6:b'\xff\xff\xff\xe0',
+ stack_get o.6:b'\xff\xff\xff\xe0',
+ stack_set o.3:b'\xff\xff\xff\xf0',
+ o.10,
+ cmd->acc o.9:b'\x00\x00\x00G',
+ stack_set o.8:b'\xff\xff\xff\xd8',
+ stack_get o.8:b'\xff\xff\xff\xd8',
+ stack_set o.3:b'\xff\xff\xff\xf0',
+ stack_get o.3:b'\xff\xff\xff\xf0',
+ stack_set o.2:b'\xff\xff\xff\xf8',
+ stack_get o.2:b'\xff\xff\xff\xf8',
+ out o.11:b'\x00\x00\x00\x01',
+ halt]
+compiled, resolved to instructions:
+[cmd->acc o.5:b'\x00\x00\x00\x01',
+ stack_set o.4:b'\xff\xff\xff\xe8',
+ stack_get o.4:b'\xff\xff\xff\xe8',
+ jmp_if_false o.10:b'\x00\x00\x00@',
+ cmd->acc o.7:b'\x00\x00\x00F',
+ stack_set o.6:b'\xff\xff\xff\xe0',
+ stack_get o.6:b'\xff\xff\xff\xe0',
+ stack_set o.3:b'\xff\xff\xff\xf0',
+ cmd->acc o.9:b'\x00\x00\x00G',
+ stack_set o.8:b'\xff\xff\xff\xd8',
+ stack_get o.8:b'\xff\xff\xff\xd8',
+ stack_set o.3:b'\xff\xff\xff\xf0',
+ stack_get o.3:b'\xff\xff\xff\xf0',
+ stack_set o.2:b'\xff\xff\xff\xf8',
+ stack_get o.2:b'\xff\xff\xff\xf8',
+ out o.11:b'\x00\x00\x00\x01',
+ halt]
+module exp:
+Exp:
+  Exp:
+    Id(setq)
+    Id(c)
+    Exp:
+      Id(if)
+      Int(1)
+      Int(70)
+      Int(71)
+  Exp:
+    Id(stack_get)
+    Id(c)
+  Exp:
+    Id(out)
+    Int(1)
+  Exp:
+    Id(halt)
+Machine(AmogusPC):
+  Memory at ip:
+    0x0   :0000000300000001
+    0x8   :00000008ffffffe8
+    0x10  :00000009ffffffe8
+    0x18  :0000001100000040
+    0x20  :0000000300000046
+    0x28  :00000008ffffffe0
+    0x30  :00000009ffffffe0
+    0x38  :00000008fffffff0
+  Memory at ptr:
+    0x0   :0000000300000001
+    0x8   :00000008ffffffe8
+    0x10  :00000009ffffffe8
+    0x18  :0000001100000040
+    0x20  :0000000300000046
+    0x28  :00000008ffffffe0
+    0x30  :00000009ffffffe0
+    0x38  :00000008fffffff0
+  Memory at stack:
+    0x3c0 :0000000000000000
+    0x3c8 :0000000000000000
+    0x3d0 :0000000000000000
+    0x3d8 :0000000000000000
+    0x3e0 :0000000000000000
+    0x3e8 :0000000000000000
+    0x3f0 :0000000000000000
+    0x3f8 :0000000000000000  
+CPU:
+  acc:0000000000000000   ptr:0000000000000000 cmd:0000000000000000
+   ip:0000000000000000 stack:0000000000000400   
+stdin:
+    amogus test
+    ^  
+stdout:
+    
+    ^
+instruction fetch...
+acc:0000000000000000   ptr:0000000000000000 cmd:0000000000000000
+ ip:0000000000000000 stack:0000000000000400 
+acc:0000000000000000   ptr:0000000000000000 cmd:0000000300000001
+ ip:0000000000000000 stack:0000000000000400 
+exec...
+cmd->acc <computer.microcode.Microcode object at 0x10124e110>
+acc:0000000000000001   ptr:0000000000000000 cmd:0000000300000001
+ ip:0000000000000000 stack:0000000000000400 
+inc ip...
+acc:0000000000000001   ptr:0000000000000000 cmd:0000000300000001
+ ip:0000000000000008 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000001   ptr:0000000000000008 cmd:0000000300000001
+ ip:0000000000000008 stack:0000000000000400 
+acc:0000000000000001   ptr:0000000000000008 cmd:00000008ffffffe8
+ ip:0000000000000008 stack:0000000000000400 
+exec...
+stack_set <computer.microcode.Microcode object at 0x10124ee10>
+acc:0000000000000001   ptr:00000000000003e8 cmd:00000008ffffffe8
+ ip:0000000000000008 stack:0000000000000400 
+acc:0000000000000001   ptr:00000000000003e8 cmd:00000008ffffffe8
+ ip:0000000000000008 stack:0000000000000400 
+inc ip...
+acc:0000000000000001   ptr:00000000000003e8 cmd:00000008ffffffe8
+ ip:0000000000000010 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000001   ptr:0000000000000010 cmd:00000008ffffffe8
+ ip:0000000000000010 stack:0000000000000400 
+acc:0000000000000001   ptr:0000000000000010 cmd:00000009ffffffe8
+ ip:0000000000000010 stack:0000000000000400 
+exec...
+stack_get <computer.microcode.Microcode object at 0x10124ee50>
+acc:0000000000000001   ptr:00000000000003e8 cmd:00000009ffffffe8
+ ip:0000000000000010 stack:0000000000000400 
+acc:0000000000000001   ptr:00000000000003e8 cmd:00000009ffffffe8
+ ip:0000000000000010 stack:0000000000000400 
+inc ip...
+acc:0000000000000001   ptr:00000000000003e8 cmd:00000009ffffffe8
+ ip:0000000000000018 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000001   ptr:0000000000000018 cmd:00000009ffffffe8
+ ip:0000000000000018 stack:0000000000000400 
+acc:0000000000000001   ptr:0000000000000018 cmd:0000001100000040
+ ip:0000000000000018 stack:0000000000000400 
+exec...
+jmp_if_false <computer.microcode.Microcode object at 0x10124f490>
+acc:0000000000000000   ptr:0000000000000018 cmd:0000001100000040
+ ip:0000000000000018 stack:0000000000000400 
+acc:0000000000000000   ptr:0000000000000018 cmd:0000001100000040
+ ip:0000000000000018 stack:0000000000000400 
+inc ip...
+acc:0000000000000000   ptr:0000000000000018 cmd:0000001100000040
+ ip:0000000000000020 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000000   ptr:0000000000000020 cmd:0000001100000040
+ ip:0000000000000020 stack:0000000000000400 
+acc:0000000000000000   ptr:0000000000000020 cmd:0000000300000046
+ ip:0000000000000020 stack:0000000000000400 
+exec...
+cmd->acc <computer.microcode.Microcode object at 0x10124e110>
+acc:0000000000000046   ptr:0000000000000020 cmd:0000000300000046
+ ip:0000000000000020 stack:0000000000000400 
+inc ip...
+acc:0000000000000046   ptr:0000000000000020 cmd:0000000300000046
+ ip:0000000000000028 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000046   ptr:0000000000000028 cmd:0000000300000046
+ ip:0000000000000028 stack:0000000000000400 
+acc:0000000000000046   ptr:0000000000000028 cmd:00000008ffffffe0
+ ip:0000000000000028 stack:0000000000000400 
+exec...
+stack_set <computer.microcode.Microcode object at 0x10124ee10>
+acc:0000000000000046   ptr:00000000000003e0 cmd:00000008ffffffe0
+ ip:0000000000000028 stack:0000000000000400 
+acc:0000000000000046   ptr:00000000000003e0 cmd:00000008ffffffe0
+ ip:0000000000000028 stack:0000000000000400 
+inc ip...
+acc:0000000000000046   ptr:00000000000003e0 cmd:00000008ffffffe0
+ ip:0000000000000030 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000046   ptr:0000000000000030 cmd:00000008ffffffe0
+ ip:0000000000000030 stack:0000000000000400 
+acc:0000000000000046   ptr:0000000000000030 cmd:00000009ffffffe0
+ ip:0000000000000030 stack:0000000000000400 
+exec...
+stack_get <computer.microcode.Microcode object at 0x10124ee50>
+acc:0000000000000046   ptr:00000000000003e0 cmd:00000009ffffffe0
+ ip:0000000000000030 stack:0000000000000400 
+acc:0000000000000046   ptr:00000000000003e0 cmd:00000009ffffffe0
+ ip:0000000000000030 stack:0000000000000400 
+inc ip...
+acc:0000000000000046   ptr:00000000000003e0 cmd:00000009ffffffe0
+ ip:0000000000000038 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000046   ptr:0000000000000038 cmd:00000009ffffffe0
+ ip:0000000000000038 stack:0000000000000400 
+acc:0000000000000046   ptr:0000000000000038 cmd:00000008fffffff0
+ ip:0000000000000038 stack:0000000000000400 
+exec...
+stack_set <computer.microcode.Microcode object at 0x10124ee10>
+acc:0000000000000046   ptr:00000000000003f0 cmd:00000008fffffff0
+ ip:0000000000000038 stack:0000000000000400 
+acc:0000000000000046   ptr:00000000000003f0 cmd:00000008fffffff0
+ ip:0000000000000038 stack:0000000000000400 
+inc ip...
+acc:0000000000000046   ptr:00000000000003f0 cmd:00000008fffffff0
+ ip:0000000000000040 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000046   ptr:0000000000000040 cmd:00000008fffffff0
+ ip:0000000000000040 stack:0000000000000400 
+acc:0000000000000046   ptr:0000000000000040 cmd:0000000300000047
+ ip:0000000000000040 stack:0000000000000400 
+exec...
+cmd->acc <computer.microcode.Microcode object at 0x10124e110>
+acc:0000000000000047   ptr:0000000000000040 cmd:0000000300000047
+ ip:0000000000000040 stack:0000000000000400 
+inc ip...
+acc:0000000000000047   ptr:0000000000000040 cmd:0000000300000047
+ ip:0000000000000048 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000047   ptr:0000000000000048 cmd:0000000300000047
+ ip:0000000000000048 stack:0000000000000400 
+acc:0000000000000047   ptr:0000000000000048 cmd:00000008ffffffd8
+ ip:0000000000000048 stack:0000000000000400 
+exec...
+stack_set <computer.microcode.Microcode object at 0x10124ee10>
+acc:0000000000000047   ptr:00000000000003d8 cmd:00000008ffffffd8
+ ip:0000000000000048 stack:0000000000000400 
+acc:0000000000000047   ptr:00000000000003d8 cmd:00000008ffffffd8
+ ip:0000000000000048 stack:0000000000000400 
+inc ip...
+acc:0000000000000047   ptr:00000000000003d8 cmd:00000008ffffffd8
+ ip:0000000000000050 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000047   ptr:0000000000000050 cmd:00000008ffffffd8
+ ip:0000000000000050 stack:0000000000000400 
+acc:0000000000000047   ptr:0000000000000050 cmd:00000009ffffffd8
+ ip:0000000000000050 stack:0000000000000400 
+exec...
+stack_get <computer.microcode.Microcode object at 0x10124ee50>
+acc:0000000000000047   ptr:00000000000003d8 cmd:00000009ffffffd8
+ ip:0000000000000050 stack:0000000000000400 
+acc:0000000000000047   ptr:00000000000003d8 cmd:00000009ffffffd8
+ ip:0000000000000050 stack:0000000000000400 
+inc ip...
+acc:0000000000000047   ptr:00000000000003d8 cmd:00000009ffffffd8
+ ip:0000000000000058 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000047   ptr:0000000000000058 cmd:00000009ffffffd8
+ ip:0000000000000058 stack:0000000000000400 
+acc:0000000000000047   ptr:0000000000000058 cmd:00000008fffffff0
+ ip:0000000000000058 stack:0000000000000400 
+exec...
+stack_set <computer.microcode.Microcode object at 0x10124ee10>
+acc:0000000000000047   ptr:00000000000003f0 cmd:00000008fffffff0
+ ip:0000000000000058 stack:0000000000000400 
+acc:0000000000000047   ptr:00000000000003f0 cmd:00000008fffffff0
+ ip:0000000000000058 stack:0000000000000400 
+inc ip...
+acc:0000000000000047   ptr:00000000000003f0 cmd:00000008fffffff0
+ ip:0000000000000060 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000047   ptr:0000000000000060 cmd:00000008fffffff0
+ ip:0000000000000060 stack:0000000000000400 
+acc:0000000000000047   ptr:0000000000000060 cmd:00000009fffffff0
+ ip:0000000000000060 stack:0000000000000400 
+exec...
+stack_get <computer.microcode.Microcode object at 0x10124ee50>
+acc:0000000000000047   ptr:00000000000003f0 cmd:00000009fffffff0
+ ip:0000000000000060 stack:0000000000000400 
+acc:0000000000000047   ptr:00000000000003f0 cmd:00000009fffffff0
+ ip:0000000000000060 stack:0000000000000400 
+inc ip...
+acc:0000000000000047   ptr:00000000000003f0 cmd:00000009fffffff0
+ ip:0000000000000068 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000047   ptr:0000000000000068 cmd:00000009fffffff0
+ ip:0000000000000068 stack:0000000000000400 
+acc:0000000000000047   ptr:0000000000000068 cmd:00000008fffffff8
+ ip:0000000000000068 stack:0000000000000400 
+exec...
+stack_set <computer.microcode.Microcode object at 0x10124ee10>
+acc:0000000000000047   ptr:00000000000003f8 cmd:00000008fffffff8
+ ip:0000000000000068 stack:0000000000000400 
+acc:0000000000000047   ptr:00000000000003f8 cmd:00000008fffffff8
+ ip:0000000000000068 stack:0000000000000400 
+inc ip...
+acc:0000000000000047   ptr:00000000000003f8 cmd:00000008fffffff8
+ ip:0000000000000070 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000047   ptr:0000000000000070 cmd:00000008fffffff8
+ ip:0000000000000070 stack:0000000000000400 
+acc:0000000000000047   ptr:0000000000000070 cmd:00000009fffffff8
+ ip:0000000000000070 stack:0000000000000400 
+exec...
+stack_get <computer.microcode.Microcode object at 0x10124ee50>
+acc:0000000000000047   ptr:00000000000003f8 cmd:00000009fffffff8
+ ip:0000000000000070 stack:0000000000000400 
+acc:0000000000000047   ptr:00000000000003f8 cmd:00000009fffffff8
+ ip:0000000000000070 stack:0000000000000400 
+inc ip...
+acc:0000000000000047   ptr:00000000000003f8 cmd:00000009fffffff8
+ ip:0000000000000078 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000047   ptr:0000000000000078 cmd:00000009fffffff8
+ ip:0000000000000078 stack:0000000000000400 
+acc:0000000000000047   ptr:0000000000000078 cmd:0000000e00000001
+ ip:0000000000000078 stack:0000000000000400 
+exec...
+out <computer.microcode.Microcode object at 0x10124f210>
+acc:0000000000000047   ptr:0000000000000001 cmd:0000000e00000001
+ ip:0000000000000078 stack:0000000000000400 
+acc:0000000000000047   ptr:0000000000000001 cmd:0000000e00000001
+ ip:0000000000000078 stack:0000000000000400 
+inc ip...
+acc:0000000000000047   ptr:0000000000000001 cmd:0000000e00000001
+ ip:0000000000000080 stack:0000000000000400 
+instruction fetch...
+acc:0000000000000047   ptr:0000000000000080 cmd:0000000e00000001
+ ip:0000000000000080 stack:0000000000000400 
+acc:0000000000000047   ptr:0000000000000080 cmd:0000000100000000
+ ip:0000000000000080 stack:0000000000000400 
+exec...
+halt <computer.microcode.Microcode object at 0x10124ded0>
+acc:0000000000000047   ptr:0000000000000080 cmd:0000000100000000
+ ip:0000000000000080 stack:0000000000000400 
+inc ip...
+acc:0000000000000047   ptr:0000000000000080 cmd:0000000100000000
+ ip:0000000000000088 stack:0000000000000400 
+G
+Machine(AmogusPC):
+  Memory at ip:
+    0x88  :0000000000000000
+    0x90  :0000000000000000
+    0x98  :0000000000000000
+    0xa0  :0000000000000000
+    0xa8  :0000000000000000
+    0xb0  :0000000000000000
+    0xb8  :0000000000000000
+    0xc0  :0000000000000000
+  Memory at ptr:
+    0x80  :0000000100000000
+    0x88  :0000000000000000
+    0x90  :0000000000000000
+    0x98  :0000000000000000
+    0xa0  :0000000000000000
+    0xa8  :0000000000000000
+    0xb0  :0000000000000000
+    0xb8  :0000000000000000
+  Memory at stack:
+    0x3c0 :0000000000000000
+    0x3c8 :0000000000000000
+    0x3d0 :0000000000000000
+    0x3d8 :0000000000000047
+    0x3e0 :0000000000000046
+    0x3e8 :0000000000000001
+    0x3f0 :0000000000000047
+    0x3f8 :0000000000000047  
+CPU:
+  acc:0000000000000047   ptr:0000000000000080 cmd:0000000100000000
+   ip:0000000000000088 stack:0000000000000400   
+stdin:
+    amogus test
+    ^  
+stdout:
+    G
+    ^

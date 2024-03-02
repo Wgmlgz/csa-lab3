@@ -1,63 +1,67 @@
 from enum import Enum
 import re
+from typing import Optional
 # from config import config
 from lang.token import Token, TokenType
 from utils import tab
+import re
 
 class Exp:
-  aaa = 228
-  pass
-
+  begin: int
+  end: int
 
 class Nested(Exp):
-  aaa = 111
   children: list[Exp] = []
-
+  
   def __init__(self) -> None:
     super().__init__()
     self.children = []
-    
     
   def to_string(self) -> str:
     inner = '\n'.join([tab(e.to_string()) for e in self.children])
     return f'Exp:\n{inner}'
   
 class IntLiteral(Exp):
-  val_int: int
+  val: int
   def __init__(self, val: int) -> None:
     super().__init__()
-    self.val_int  = val
+    self.val  = val
   def to_string(self) -> str:
-    return f'Int({self.val_int})'
+    return f'Int({self.val})'
   
 class StrLiteral(Exp):
-  val_str: str
+  val: str
   def __init__(self, val: str) -> None:
     super().__init__()
-    self.val_str  = val
+    self.val  = val
     
   def to_string(self) -> str:
-    return f'Str({self.val_str})'
+    return f'Str({self.val})'
   
 class IdLiteral(Exp):
-  val_id: str
+  val: str
   
   def __init__(self, val: str) -> None:
     super().__init__()
-    self.val_id  = val
+    self.val  = val
     
   def to_string(self) -> str:
-    return f'Id({self.val_id})'
+    return f'Id({self.val})'
 
 class ParseException(Exception):
   token: Token
   msg: str
   
-  def __init__(self, msg: str, token: Token = None, after = False) -> None:
-    super().__init__(msg, token, after)
+  def __init__(self, msg: str, pos = None, after = False, exp: Exp = None) -> None:
+    super().__init__(msg, pos, after)
     self.msg = msg
-    self.token = token
     self.after = after
+    self.exp = exp
+    
+    if isinstance(pos, Token):
+      self.token = pos
+    if isinstance(pos, Exp):
+      self.exp = pos
     
 def parse_exp(tokens: list[Token]) -> Exp:
   exp, cursor = parse_general(tokens)
@@ -74,12 +78,15 @@ def parse_atom(tokens: list[Token], cursor: int) -> tuple:
     if token.type == TokenType.ID:
         child = IdLiteral(token.val)
     elif token.type == TokenType.INT:
-        child = IntLiteral(token.val)
+        res = eval(token.val)
+        child = IntLiteral(res)
     elif token.type == TokenType.STR:
-        child = StrLiteral(token.val)
+        escaped = eval(token.val)
+        child = StrLiteral(escaped)
     else:
         raise ParseException('Unexpected token', token)
-  
+    child.begin = cursor
+    child.end = cursor
     return child, cursor + 1
 
 def parse_general(tokens: list[Token], cursor: int = 0) -> tuple:
@@ -90,6 +97,7 @@ def parse_general(tokens: list[Token], cursor: int = 0) -> tuple:
     if token.type == TokenType.OPEN:
         cursor += 1
         exp = Nested()
+        exp.begin = cursor - 1
         
         while tokens[cursor].type != TokenType.CLOSE:
             child, cursor = parse_general(tokens, cursor)
@@ -97,30 +105,9 @@ def parse_general(tokens: list[Token], cursor: int = 0) -> tuple:
             if cursor >= len(tokens):
                 raise ParseException('Expected `)`, found EOF', tokens[-1], after=True)
         
+        exp.end = cursor
         return exp, cursor + 1
     elif token.type == TokenType.CLOSE:
         raise ParseException('Unexpected `)`', token)
     else:
         return parse_atom(tokens, cursor)
-
-
-
-
-       
-
-# `(` is parsed, `)` is handled here 
-# def parse_nested(tokens: list[Token], last: Token) -> Exp:
-#   exp = Nested()
-  
-#   while True:
-#     print(exp)
-#     print(tokens)
-    
-#     if len(tokens) == 0:
-#       raise ParseException('Expected `)`', last, after=True)
-#     token = tokens[0]
-#     if token.type == TokenType.CLOSE:
-#       return exp, tokens[1:]
-#     else:
-#       child, tokens = parse_general(tokens)
-#       exp.children.append(child)

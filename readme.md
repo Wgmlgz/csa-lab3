@@ -115,7 +115,7 @@ lisp -> asm | acc | neum | hw | instr | struct | stream | port | pstr | prob2 | 
 
 ## Система команд
 
-![Alt text](image-1.png)
+![Alt text](image-2.png)
 
 Control signals:
 
@@ -157,6 +157,14 @@ Instruction Set:
 | stream  | дескриптор ввода/вывода |
 | mem     | указатель памяти        |
 | run     | работает ли процессор   |
+
+| address | content                 |
+| ------- | ----------------------- |
+| 0xff    | ret                     |
+| 0xff    | ret                     |
+| 0xff    | var1                    |
+| 0xff    | var2                    |
+| 0xff    | var3                    |
 
 <!-- Раздел должен включать:
 
