@@ -1,8 +1,16 @@
 (
-  (setq c (if 0 70 71))
+  (setq iter 10)
+  (setq a 65)
 
-  
-  (stack_get c)
-  (out 1)
+  (while (iter) (
+    (stack_get a)
+    (out 1)
+    (inc)
+    (stack_set a)
+
+    (stack_get iter)
+    (dec)
+    (stack_set iter)
+  ))
   (halt)
 )

@@ -242,9 +242,10 @@ def compile_instr(exp: Exp, scope: Scope) -> Entry:
 
 
 # copy from a to b
-def insert_copy(block: Block, a: Object, b: Object):
-    block.content.append(Instruction('stack_get', a))
-    block.content.append(Instruction('stack_set', b))
+def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry):
+    if a.type.size != 0:
+        block.content.append(Instruction('stack_get', a.stack_offset))
+        block.content.append(Instruction('stack_set', b.stack_offset))
 
 
 def compile_action(child: Nested, parent: Scope) -> Block:
@@ -269,41 +270,66 @@ def compile_action(child: Nested, parent: Scope) -> Block:
 
         if len(child.children) != 4 or len(child.children) < 3:
             raise ParseException(
-                f'Unexpected number of arguments in `if` e.g. `(if cond t f)`', child)
+                f'Unexpected number of arguments ({len(child.children)}) in `if` e.g. `(if cond t f)`', child)
         cond = compile_block(child.children[1], parent)
-        t = compile_block(child.children[2], parent)
+        body = compile_block(child.children[2], parent)
         if len(child.children) == 4:
             f = compile_block(child.children[3], parent)
         else:
-            if t.ret.type.id != void_type.id:
-                raise ParseException(
-                    f'when if doens\'t have else branch, return type must be ()', child)
             f = Block(parent)
             f.ret.type = void_type
 
         if cond.ret.type.id != 'u64':
             raise ParseException(
                 f'return type of `if` condition bust be `u64`', child.children[1])
-        # if t.ret.type.id != f.ret.type.id:
-        #     raise ParseException(
-        #      f'branches of if must have same return type', child)
 
-        block.ret.type = t.ret.type
+        if body.ret.type.id != f.ret.type.id:
+            raise ParseException(
+                f'if types must match', child)
 
-        label_false = Object()
+        block.ret.type = body.ret.type
+
+        label_begin = Object()
         label_end = Object()
         block.content.append(cond)
         block.content.append(Instruction('stack_get', cond.ret.stack_offset))
-        block.content.append(Instruction('jmp_if_false', label_false))
-        block.content.append(t)
-        insert_copy(block, t.ret.stack_offset, block.ret.stack_offset)
+        block.content.append(Instruction('jmp_if_false', label_begin))
+        block.content.append(body)
+        insert_copy(block, body.ret, block.ret)
         block.content.append(Instruction('jmp', label_end))
-        block.content.append(label_false)
+        block.content.append(label_begin)
         block.content.append(f)
-        insert_copy(block, f.ret.stack_offset, block.ret.stack_offset)
+        insert_copy(block, f.ret, block.ret)
         block.content.append(label_end)
-        
+
         # block.content.append(Object)
+
+        return block
+    elif id == 'while':
+        block = Block(parent)
+
+        if len(child.children) != 3:
+            raise ParseException(
+                f'Unexpected number of arguments ({len(child.children)}) in `while` e.g. `(while cond body)`', child)
+        cond = compile_block(child.children[1], parent)
+        body = compile_block(child.children[2], parent)
+
+        if cond.ret.type.id != 'u64':
+            raise ParseException(
+                f'return type of `while` condition bust be `u64`', child.children[1])
+
+        block.ret.type = body.ret.type
+
+        label_begin = Object()
+        label_end = Object()
+        block.content.append(label_begin)
+        block.content.append(cond)
+        block.content.append(Instruction('stack_get', cond.ret.stack_offset))
+        block.content.append(Instruction('jmp_if_false', label_end))
+        block.content.append(body)
+        insert_copy(block, body.ret, block.ret)
+        block.content.append(Instruction('jmp', label_begin))
+        block.content.append(label_end)
 
         return block
     else:
@@ -312,7 +338,7 @@ def compile_action(child: Nested, parent: Scope) -> Block:
         block.ret.type = var.type
         if block.ret.type.size != 8:
             raise ParseException(f'only 8-byte fow now', child)
-        insert_copy(block, var.stack_offset, block.ret.stack_offset)
+        insert_copy(block, var, block.ret)
         return block
         # raise ParseException(f'Unknown action `{id}`')
 
@@ -337,8 +363,8 @@ def compile_block(exp: Exp, parent: Scope) -> Block:
                 block.ret.type = last.ret.type
                 if last.ret.type.size != 8:
                     raise ParseException('only 8 bytes lololol', last)
-                insert_copy(block, last.ret.stack_offset,
-                            block.ret.stack_offset)
+                insert_copy(block, last.ret,
+                            block.ret)
     elif isinstance(exp, IntLiteral):
         block.ret.type = u64_type
 

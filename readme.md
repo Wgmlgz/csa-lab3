@@ -319,3 +319,15 @@ code инстр. -- кол-во инструкций в машинном код�
         Показать, как размер кеша влияет на его производительность.
 Ссылки:
     Fibonacci sequence: <https://en.wikipedia.org/wiki/Fibonacci_sequence> -->
+
+
+
+
+# TODO
+
+function calls
+data structures
+macros
+multimodule
+report
+tests
