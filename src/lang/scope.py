@@ -167,17 +167,20 @@ class Instruction:
 
 class Block:
     scope: Scope
-    before_ret: Object
+    before_ret: Optional[Object]
     ret: ScopeEntry
     content: list['Entry']
     global_entries: list['Entry']
 
-    def __init__(self, parent: Scope) -> None:
+    def __init__(self, parent: Scope, ret: ScopeEntry = None) -> None:
         self.scope = Scope(parent)
         self.content = []
         self.global_entries = []
-        self.ret = ScopeEntry()
-        self.before_ret = Object()
+        if ret is not None:
+            self.ret = ret
+        else:
+            self.ret = ScopeEntry()
+            self.before_ret = Object()
 
     def __str__(self) -> str:
         s = f'Block -> {self.ret}\n'

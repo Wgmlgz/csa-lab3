@@ -80,20 +80,22 @@ def compile_instr(exp: Exp, scope: Scope) -> Entry:
 
 # copy from a to b
 def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry):
+    if a.obj.id == b.obj.id:
+        return
     if a.type.size != 0:
         block.content.append(Instruction('local_get', a.obj))
         block.content.append(Instruction('local_set', b.obj))
 
 
-def compile_if(child: Nested, parent: Scope, glob: Scope) -> Block:
-    block = Block(parent)
+def compile_if(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) -> Block:
+    block = Block(parent, ret)
     if len(child.children) != 4 or len(child.children) < 3:
         raise ParseException(
             f'Unexpected number of arguments ({len(child.children)}) in `if` e.g. `(if cond t f)`', child)
     cond = compile_block(child.children[1], parent, glob)
-    body = compile_block(child.children[2], parent, glob)
+    t = compile_block(child.children[2], parent, glob, block.ret)
     if len(child.children) == 4:
-        f = compile_block(child.children[3], parent, glob)
+        f = compile_block(child.children[3], parent, glob, block.ret)
     else:
         f = Block(parent)
         f.ret.type = void_type
@@ -102,19 +104,19 @@ def compile_if(child: Nested, parent: Scope, glob: Scope) -> Block:
         raise ParseException(
             f'return type of `if` condition bust be `u64`', child.children[1])
 
-    if body.ret.type.id != f.ret.type.id:
+    if t.ret.type.id != f.ret.type.id:
         raise ParseException(
             f'if types must match', child)
 
-    block.ret.type = body.ret.type
+    block.ret.type = t.ret.type
 
     label_begin = Object()
     label_end = Object()
     block.content.append(cond)
     block.content.append(Instruction('local_get', cond.ret.obj))
     block.content.append(Instruction('jmp_if_false', label_begin))
-    block.content.append(body)
-    insert_copy(block, body.ret, block.ret)
+    block.content.append(t)
+    insert_copy(block, t.ret, block.ret)
     block.content.append(Instruction('jmp', label_end))
     block.content.append(label_begin)
     block.content.append(f)
@@ -123,14 +125,14 @@ def compile_if(child: Nested, parent: Scope, glob: Scope) -> Block:
     return block
 
 
-def compile_while(child: Nested, parent: Scope, glob: Scope) -> Block:
-    block = Block(parent)
+def compile_while(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) -> Block:
+    block = Block(parent, ret)
 
     if len(child.children) != 3:
         raise ParseException(
             f'Unexpected number of arguments ({len(child.children)}) in `while` e.g. `(while cond body)`', child)
     cond = compile_block(child.children[1], parent, glob)
-    body = compile_block(child.children[2], parent, glob)
+    body = compile_block(child.children[2], parent, glob, ret)
 
     if cond.ret.type.id != 'u64':
         raise ParseException(
@@ -151,7 +153,7 @@ def compile_while(child: Nested, parent: Scope, glob: Scope) -> Block:
     return block
 
 
-def compile_let(child: Nested, parent: Scope, glob: Scope) -> Block:
+def compile_let(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) -> Block:
     if len(child.children) != 3:
         raise ParseException(
             f'Expected 2 arguments e.g. `let x val`', child)
@@ -159,7 +161,7 @@ def compile_let(child: Nested, parent: Scope, glob: Scope) -> Block:
         raise ParseException(
             f'Expected identifier e.g. `let x val`', child.children[1])
     var_name = child.children[1].val
-    body = compile_block(child.children[2], parent, glob)
+    body = compile_block(child.children[2], parent, glob, ret)
     parent.add(var_name, body.ret, child.children[1])
     return body
 
@@ -176,7 +178,7 @@ def compile_typed(exp: Exp, scope: Scope) -> tuple[str, Type]:
     return name, type
 
 
-def compile_fn(exp: Nested, parent: Scope, glob: Scope) -> Block:
+def compile_fn(exp: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) -> Block:
     if len(exp.children) < 3:
         raise ParseException(
             f'Expected at least 3 arguments e.g. `fn name (body)`, found({len(exp.children)})', exp)
@@ -201,8 +203,11 @@ def compile_fn(exp: Nested, parent: Scope, glob: Scope) -> Block:
     ret_entry = ScopeEntry(u64_type)
     block.scope.add('ret_addr', ret_entry, exp)
 
+    for child in args_def:
+        name, type = compile_typed(child, parent)
+        block.scope.add(name, ScopeEntry(type), child)
     fn_type = Callable(
-        [val.type for val in block.scope.locals.values()], ret_type)
+        [val.type for key, val in block.scope.locals.items() if key != 'ret_addr'], ret_type)
     fn_label = ScopeEntry(fn_type)
     fn_label.obj.name = fn_name
     glob.add(fn_name, fn_label, exp)
@@ -211,11 +216,9 @@ def compile_fn(exp: Nested, parent: Scope, glob: Scope) -> Block:
     #     raise ParseException(
     #         f'Expected nested args declaration e.g. `((arg1 type1)...)`', exp.children[2])
 
-    for child in args_def:
-        name, type = compile_typed(child, parent)
-        block.scope.add(name, ScopeEntry(type), child)
 
-    body = compile_block(exp.children[-1], block.scope, glob)
+
+    body = compile_block(exp.children[-1], block.scope, glob, block.ret)
     block.content.append(body)
     
     if block.ret.type != body.ret.type:
@@ -239,25 +242,20 @@ def compile_fn(exp: Nested, parent: Scope, glob: Scope) -> Block:
     return ret_block
 
 
-def compile_call(child: Nested, parent: Scope, glob: Scope) -> Block:
-    pass
-
-
-def compile_action(child: Nested, parent: Scope, glob: Scope) -> Block:
+def compile_action(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) -> Block:
     first_child = child.children[0]
     id = first_child.val
     if id in instructions.keys():
         return compile_instr(child, parent)
     elif id == 'let':
-        return compile_let(child, parent, glob)
+        return compile_let(child, parent, glob, ret)
     elif id == 'if':
-        return compile_if(child, parent, glob)
+        return compile_if(child, parent, glob, ret)
     elif id == 'while':
-        return compile_while(child, parent, glob)
+        return compile_while(child, parent, glob, ret)
     elif id == 'fn':
-        return compile_fn(child, parent, glob)
+        return compile_fn(child, parent, glob, ret)
     else:
-
         # else:
         var = parent.get(id, child)
         if len(child.children) == 1 and not isinstance(var.type, Callable):
@@ -299,10 +297,10 @@ def compile_action(child: Nested, parent: Scope, glob: Scope) -> Block:
             block.content.append(Instruction('cmd->acc', ret_addr_label))
             block.content.append(Instruction('local_set', ret_addr_var.obj))
 
-            args_blocks = [compile_block(exp, block.scope, glob)
-                           for exp in child.children[1:]]
-            for idx, arg_block in enumerate(args_blocks):
-                arg_scope_entry = ScopeEntry(arg_block.ret.type)
+            for idx, exp in enumerate(child.children[1:]):
+                arg_scope_entry = ScopeEntry(var.type.args[idx])
+                
+                arg_block = compile_block(exp, block.scope, glob, arg_scope_entry)
                 block.scope.add(f'_arg{idx}', arg_scope_entry, child)
                 block.content.append(arg_block)
                 insert_copy(block, arg_block.ret, arg_scope_entry)
@@ -325,26 +323,28 @@ def compile_action(child: Nested, parent: Scope, glob: Scope) -> Block:
             return block
 
 
-def compile_block(exp: Exp, parent: Scope, glob: Scope) -> Block:
-    block = Block(parent)
+def compile_block(exp: Exp, parent: Scope, glob: Scope, ret: ScopeEntry = None) -> Block:
+    block = Block(parent, ret)
     if isinstance(exp, Nested):
         if len(exp.children) > 0 and isinstance(exp.children[0],  IdLiteral):
-            entry = compile_action(exp, parent, glob)
+            entry = compile_action(exp, parent, glob, block.ret)
             block.content.append(entry)
         else:
-            for child in exp.children:
+            for idx, child in enumerate(exp.children):
+                if idx == len(exp.children) -1:
+                    child_ret = block.ret
+                else:
+                    child_ret = None
                 if isinstance(child, Nested) and len(child.children) > 0 and isinstance(child.children[0],  IdLiteral):
-                    entry = compile_action(child, block.scope, glob)
+                    entry = compile_action(child, block.scope, glob, child_ret)
                     block.content.append(entry)
                 else:
-                    entry = compile_block(child, block.scope, glob)
+                    entry = compile_block(child, block.scope, glob, child_ret)
                     block.content.append(entry)
         if len(block.content) > 0:
             last = block.content[-1]
-            if isinstance(last, Block) and last.ret.type.size > 0:
+            if isinstance(last, Block):
                 block.ret.type = last.ret.type
-                if last.ret.type.size != 8:
-                    raise ParseException('only 8 bytes lololol', last)
                 insert_copy(block, last.ret,
                             block.ret)
     elif isinstance(exp, IntLiteral):
@@ -359,10 +359,7 @@ def compile_block(exp: Exp, parent: Scope, glob: Scope) -> Block:
         variable = block.scope.get(exp.val, exp)
         block.ret.type = variable.type
 
-        block.content.append(Instruction(
-            'local_get', variable.obj))
-        block.content.append(Instruction(
-            'local_set', block.ret.obj))
+        insert_copy(block, variable, block.ret)
     else:
         raise ParseException('Expected block', exp=exp)
     if block.ret.type is None:
