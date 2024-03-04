@@ -1,16 +1,57 @@
 (
-  (setq iter 10)
-  (setq a 65)
+  (fn eq (a u64) (b u64) u64 (
+    (local_get a)
+    (sub_local b)
+    (invert_bool)
+    (local_set a)
+    a))
+  (fn add (a u64) (b u64) u64 (
+    (local_get a)
+    (add_local b)
+    (local_set a)
+    a))
+  (fn sub (a u64) (b u64) u64 (
+    (local_get a)
+    (sub_local b)
+    (local_set a)
+    a))
+    
+  (fn mul (a u64) (b u64) u64 (
+    (local_get a)
+    (mul_local b)
+    (local_set a)
+    a))
 
-  (while (iter) (
-    (stack_get a)
-    (out 1)
-    (inc)
-    (stack_set a)
+  (fn print_u64 (n u64) (
+    (let cur 100000000)
+    (let base 10)
+    (let zero 48)
 
-    (stack_get iter)
-    (dec)
-    (stack_set iter)
-  ))
+    (while cur (
+      (local_get n)
+      (div_local cur)
+      (rem_local base)
+      (add_local zero)
+      (out 1)
+
+      (local_get cur)
+      (div_local base)
+      (local_set cur)))))
+  
+  (fn factorial (n u64) u64  
+    (if (eq n 0)
+      1
+      (mul n (factorial (sub n 1)))))
+
+  (fn fib (n u64) u64  
+    (if (eq n 0) 0
+    (if (eq n 1) 1
+      (add (fib (sub n 1)) (fib (sub n 2))))))
+  ;; (fn ttt (n u64) u64 (if (eq n 0) 2 3))
+  ;; (let a (if 0 2 3))
+  ;; (let b (factorial 5))
+  (let b (fib 18))
+  ;; (print_u64 a)
+  (print_u64 b)
   (halt)
 )

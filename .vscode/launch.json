@@ -11,6 +11,14 @@
       "program": "/Users/wgmlgz/csa-lab3/src/main.py",
       "console": "integratedTerminal",
       "args": "./examples/sus/test.lsp -c -d -r"
+    },
+    {
+      "type": "cmake",
+      "request": "launch",
+      "name": "Debug portfile(s)",
+      "cmakeDebugType": "external",
+      "pipeName": "/tmp/vcpkg_ext_portfile_dbg",
+      "preLaunchTask": "Debug vcpkg commands"
     }
   ]
 }

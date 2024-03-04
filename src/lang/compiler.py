@@ -2,6 +2,7 @@ from pprint import pprint
 from typing import Optional
 from computer.instructions import any_to_arg, instructions
 from lang.exp import Exp, IdLiteral, IntLiteral, Nested, ParseException, StrLiteral
+from lang.scope import Block, Callable, Entry, Instruction, Object, Scope, ScopeEntry, Type, void_type, u64_type
 from utils import tab, config
 
 
@@ -16,171 +17,7 @@ class Executable:
         }
         return res
 
-
-class Type:
-    id: str
-    size: int
-
-    def __init__(self, id: str = '()', size=0) -> None:
-        self.id = id
-        self.size = size
-
-    def __str__(self) -> str:
-        return f'{self.id}[{self.size}]'
-
-
-void_type = Type('()', 0)
-u64_type = Type('u64', 8)
-built_in_types = {
-    '()': void_type,  # basically `void`
-    'u64': u64_type,
-}
-
-
-class ScopeEntry:
-    type: Optional[Type]
-    stack_offset: 'Object'
-
-    def __init__(self, type: Type = None) -> None:
-        self.type = type
-        self.stack_offset = Object()
-
-    def __str__(self) -> str:
-        s = f'{str(self.type)} at {str(self.stack_offset)}'
-        return s
-
-
-class Scope:
-    parent: Optional['Scope']
-    definitions: dict[str, ScopeEntry]
-
-    def __init__(self, parent: Optional['Scope'] = None) -> None:
-        self.parent = parent
-        self.definitions = {}
-
-    def add(self, id: str, scope_entry: ScopeEntry, exp: Exp) -> Optional[str]:
-        if id in self.definitions:
-            raise ParseException(
-                f'Variable {id} is already defined in this scope', exp)
-        self.definitions[id] = scope_entry
-
-    def __str__(self) -> str:
-        if len(self.definitions) == 0:
-            return 'EmptyScope'
-        s = 'Scope:\n  '
-        s += '\n  '.join(f'{key}: {val.type} at {val.stack_offset}' for key,
-                         val in self.definitions.items())
-        return s
-
-    def resolve_offsets(self, offset: int):
-        for entry in self.definitions.values():
-            if entry.stack_offset.resolved is None:
-                offset -= entry.type.size
-                entry.stack_offset.resolved = offset.to_bytes(4, signed=True)
-        return offset
-
-    def get(self, id: str, exp: Exp) -> ScopeEntry:
-        if id in self.definitions:
-            return self.definitions[id]
-        elif self.parent is not None:
-            return self.parent.get(id, exp)
-        else:
-            raise ParseException(f'Undefined variable `{id}`', exp)
-
-
-static_id = 1
-
-# Compiled but not linked instruction arg
-
-
-class Object:
-    id: str
-    resolved: Optional[bytes]
-
-    def __init__(self, resolved=None) -> None:
-        global static_id
-        self.id = str(static_id)
-        static_id = static_id + 1
-        self.resolved = resolved
-
-    def __str__(self) -> str:
-        s = 'o.'
-        s += f'{self.id}'
-        if self.resolved is not None:
-            s += f':{self.resolved}'
-        return s
-
-    def __repr__(self) -> str:
-        return str(self)
-
-
-class Instruction:
-    id: str
-    arg: Optional[Object]
-
-    def __init__(self, id: str, arg: Optional[Object] = None) -> None:
-        self.id = id
-        self.arg = arg
-
-    def __str__(self) -> str:
-        s = ''
-        s += self.id
-        if self.arg is not None:
-            s += f' {str(self.arg)}'
-        return s
-
-    def __repr__(self) -> str:
-        return str(self)
-
-    def to_list(self):
-        res = [self.id]
-        if self.arg is not None and self.arg.resolved is not None:
-            res.append(int.from_bytes(self.arg.resolved))
-        return res
-
-
-class Block:
-    scope: Scope
-    ret: ScopeEntry
-    content: list['Entry']
-
-    def __init__(self, parent: Scope) -> None:
-        self.scope = Scope(parent)
-        self.content = []
-        self.ret = ScopeEntry()
-
-    def __str__(self) -> str:
-        s = f'Block -> {self.ret}\n'
-        s += tab(str(self.scope)) + '\n[\n'
-        s += tab('\n'.join([str(instr) for instr in self.content]))
-        s += '\n]'
-        return s
-
-    def resolve_offsets(self, base: int) -> list[Instruction]:
-        if self.ret.stack_offset.resolved is None:
-            base -= self.ret.type.size
-            self.ret.stack_offset.resolved = base.to_bytes(4, signed=True)
-
-        base = self.scope.resolve_offsets(base)
-
-        for entry in self.content:
-            if isinstance(entry, Block):
-                base = entry.resolve_offsets(base)
-        return base
-
-    def flatten(self) -> list[Instruction | Object]:
-        res = []
-        for entry in self.content:
-            if isinstance(entry, Instruction):
-                res.append(entry)
-            elif isinstance(entry, Block):
-                res.extend(entry.flatten())
-            elif isinstance(entry, Object):
-                res.append(entry)
-        return res
-
-
-Entry = Instruction | Block | Object
+# class Callable:
 
 
 # class Function:
@@ -231,7 +68,7 @@ def compile_instr(exp: Exp, scope: Scope) -> Entry:
         arg = exp.children[1]
         if isinstance(arg, IdLiteral):
             scope_entry = scope.get(arg.val, arg)
-            instr.arg = scope_entry.stack_offset
+            instr.arg = scope_entry.obj
         elif isinstance(arg, IntLiteral) or isinstance(arg, StrLiteral):
             arg = any_to_arg(arg.val)
             instr.arg = Object(arg)
@@ -244,118 +81,263 @@ def compile_instr(exp: Exp, scope: Scope) -> Entry:
 # copy from a to b
 def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry):
     if a.type.size != 0:
-        block.content.append(Instruction('stack_get', a.stack_offset))
-        block.content.append(Instruction('stack_set', b.stack_offset))
+        block.content.append(Instruction('local_get', a.obj))
+        block.content.append(Instruction('local_set', b.obj))
 
 
-def compile_action(child: Nested, parent: Scope) -> Block:
+def compile_if(child: Nested, parent: Scope, glob: Scope) -> Block:
+    block = Block(parent)
+    if len(child.children) != 4 or len(child.children) < 3:
+        raise ParseException(
+            f'Unexpected number of arguments ({len(child.children)}) in `if` e.g. `(if cond t f)`', child)
+    cond = compile_block(child.children[1], parent, glob)
+    body = compile_block(child.children[2], parent, glob)
+    if len(child.children) == 4:
+        f = compile_block(child.children[3], parent, glob)
+    else:
+        f = Block(parent)
+        f.ret.type = void_type
+
+    if cond.ret.type.id != 'u64':
+        raise ParseException(
+            f'return type of `if` condition bust be `u64`', child.children[1])
+
+    if body.ret.type.id != f.ret.type.id:
+        raise ParseException(
+            f'if types must match', child)
+
+    block.ret.type = body.ret.type
+
+    label_begin = Object()
+    label_end = Object()
+    block.content.append(cond)
+    block.content.append(Instruction('local_get', cond.ret.obj))
+    block.content.append(Instruction('jmp_if_false', label_begin))
+    block.content.append(body)
+    insert_copy(block, body.ret, block.ret)
+    block.content.append(Instruction('jmp', label_end))
+    block.content.append(label_begin)
+    block.content.append(f)
+    insert_copy(block, f.ret, block.ret)
+    block.content.append(label_end)
+    return block
+
+
+def compile_while(child: Nested, parent: Scope, glob: Scope) -> Block:
+    block = Block(parent)
+
+    if len(child.children) != 3:
+        raise ParseException(
+            f'Unexpected number of arguments ({len(child.children)}) in `while` e.g. `(while cond body)`', child)
+    cond = compile_block(child.children[1], parent, glob)
+    body = compile_block(child.children[2], parent, glob)
+
+    if cond.ret.type.id != 'u64':
+        raise ParseException(
+            f'return type of `while` condition bust be `u64`', child.children[1])
+
+    block.ret.type = body.ret.type
+
+    label_begin = Object()
+    label_end = Object()
+    block.content.append(label_begin)
+    block.content.append(cond)
+    block.content.append(Instruction('local_get', cond.ret.obj))
+    block.content.append(Instruction('jmp_if_false', label_end))
+    block.content.append(body)
+    insert_copy(block, body.ret, block.ret)
+    block.content.append(Instruction('jmp', label_begin))
+    block.content.append(label_end)
+    return block
+
+
+def compile_let(child: Nested, parent: Scope, glob: Scope) -> Block:
+    if len(child.children) != 3:
+        raise ParseException(
+            f'Expected 2 arguments e.g. `let x val`', child)
+    if not isinstance(child.children[1], IdLiteral):
+        raise ParseException(
+            f'Expected identifier e.g. `let x val`', child.children[1])
+    var_name = child.children[1].val
+    body = compile_block(child.children[2], parent, glob)
+    parent.add(var_name, body.ret, child.children[1])
+    return body
+
+
+def compile_typed(exp: Exp, scope: Scope) -> tuple[str, Type]:
+    if not (isinstance(exp, Nested)
+            and len(exp.children) == 2
+            and isinstance(exp.children[0], IdLiteral)
+            and isinstance(exp.children[1], IdLiteral)):
+        raise ParseException(
+            f'Invalid typed declaration, expected `(name type)`', exp)
+    name = exp.children[0].val
+    type = scope.get_type(exp.children[1].val, exp.children[1])
+    return name, type
+
+
+def compile_fn(exp: Nested, parent: Scope, glob: Scope) -> Block:
+    if len(exp.children) < 3:
+        raise ParseException(
+            f'Expected at least 3 arguments e.g. `fn name (body)`, found({len(exp.children)})', exp)
+
+    if not isinstance(exp.children[1], IdLiteral):
+        raise ParseException(
+            f'Expected function name e.g. `fn name ((arg1 type1)...) (body)``', exp.children[1])
+    fn_name = exp.children[1].val
+
+    signature_def = exp.children[2:-1]
+    if len(signature_def) > 0:
+        if isinstance(signature_def[-1], IdLiteral):
+            ret_type = parent.get_type(
+                signature_def[-1].val, signature_def[-1])
+            args_def = signature_def[:-1]
+        else:
+            ret_type = void_type
+            args_def = signature_def
+
+    block = Block(glob)
+    block.ret.type = ret_type
+    ret_entry = ScopeEntry(u64_type)
+    block.scope.add('ret_addr', ret_entry, exp)
+
+    fn_type = Callable(
+        [val.type for val in block.scope.locals.values()], ret_type)
+    fn_label = ScopeEntry(fn_type)
+    fn_label.obj.name = fn_name
+    glob.add(fn_name, fn_label, exp)
+
+    # if not isinstance(exp.children[], Nested):
+    #     raise ParseException(
+    #         f'Expected nested args declaration e.g. `((arg1 type1)...)`', exp.children[2])
+
+    for child in args_def:
+        name, type = compile_typed(child, parent)
+        block.scope.add(name, ScopeEntry(type), child)
+
+    body = compile_block(exp.children[-1], block.scope, glob)
+    block.content.append(body)
+    
+    if block.ret.type != body.ret.type:
+        raise ParseException(
+            f'Body return type `{body.ret.type.id}` don\'t match declaration type `{block.ret.type.id}`',
+            exp.children[-1])
+
+    insert_copy(block, body.ret, block.ret)
+    block.content.append(Instruction('local_get', ret_entry.obj))
+    block.content.append(Instruction('jmp_acc'))
+    block.resolve_offsets(0)
+
+    ret_block = Block(parent)
+    ret_block.ret.type = fn_type
+    ret_block.content.append(Instruction('cmd->acc', fn_label.obj))
+    ret_block.content.append(Instruction('local_set', ret_block.ret.obj))
+
+    ret_block.global_entries.append(fn_label.obj)
+    ret_block.global_entries.append(block)
+
+    return ret_block
+
+
+def compile_call(child: Nested, parent: Scope, glob: Scope) -> Block:
+    pass
+
+
+def compile_action(child: Nested, parent: Scope, glob: Scope) -> Block:
     first_child = child.children[0]
     id = first_child.val
     if id in instructions.keys():
-        entry = compile_instr(child, parent)
-        return entry
-    elif id == 'setq':
-        if len(child.children) != 3:
-            raise ParseException(
-                f'Expected 2 arguments e.g. `setq x val`', child)
-        if not isinstance(child.children[1], IdLiteral):
-            raise ParseException(
-                f'Expected identifier e.g. `setq x val`', child.children[1])
-        var_name = child.children[1].val
-        body = compile_block(child.children[2], parent)
-        parent.add(var_name, body.ret, child.children[1])
-        return body
+        return compile_instr(child, parent)
+    elif id == 'let':
+        return compile_let(child, parent, glob)
     elif id == 'if':
-        block = Block(parent)
-
-        if len(child.children) != 4 or len(child.children) < 3:
-            raise ParseException(
-                f'Unexpected number of arguments ({len(child.children)}) in `if` e.g. `(if cond t f)`', child)
-        cond = compile_block(child.children[1], parent)
-        body = compile_block(child.children[2], parent)
-        if len(child.children) == 4:
-            f = compile_block(child.children[3], parent)
-        else:
-            f = Block(parent)
-            f.ret.type = void_type
-
-        if cond.ret.type.id != 'u64':
-            raise ParseException(
-                f'return type of `if` condition bust be `u64`', child.children[1])
-
-        if body.ret.type.id != f.ret.type.id:
-            raise ParseException(
-                f'if types must match', child)
-
-        block.ret.type = body.ret.type
-
-        label_begin = Object()
-        label_end = Object()
-        block.content.append(cond)
-        block.content.append(Instruction('stack_get', cond.ret.stack_offset))
-        block.content.append(Instruction('jmp_if_false', label_begin))
-        block.content.append(body)
-        insert_copy(block, body.ret, block.ret)
-        block.content.append(Instruction('jmp', label_end))
-        block.content.append(label_begin)
-        block.content.append(f)
-        insert_copy(block, f.ret, block.ret)
-        block.content.append(label_end)
-
-        # block.content.append(Object)
-
-        return block
+        return compile_if(child, parent, glob)
     elif id == 'while':
-        block = Block(parent)
-
-        if len(child.children) != 3:
-            raise ParseException(
-                f'Unexpected number of arguments ({len(child.children)}) in `while` e.g. `(while cond body)`', child)
-        cond = compile_block(child.children[1], parent)
-        body = compile_block(child.children[2], parent)
-
-        if cond.ret.type.id != 'u64':
-            raise ParseException(
-                f'return type of `while` condition bust be `u64`', child.children[1])
-
-        block.ret.type = body.ret.type
-
-        label_begin = Object()
-        label_end = Object()
-        block.content.append(label_begin)
-        block.content.append(cond)
-        block.content.append(Instruction('stack_get', cond.ret.stack_offset))
-        block.content.append(Instruction('jmp_if_false', label_end))
-        block.content.append(body)
-        insert_copy(block, body.ret, block.ret)
-        block.content.append(Instruction('jmp', label_begin))
-        block.content.append(label_end)
-
-        return block
+        return compile_while(child, parent, glob)
+    elif id == 'fn':
+        return compile_fn(child, parent, glob)
     else:
+
+        # else:
         var = parent.get(id, child)
-        block = Block(parent)
-        block.ret.type = var.type
-        if block.ret.type.size != 8:
-            raise ParseException(f'only 8-byte fow now', child)
-        insert_copy(block, var, block.ret)
-        return block
-        # raise ParseException(f'Unknown action `{id}`')
+        if len(child.children) == 1 and not isinstance(var.type, Callable):
+            block = Block(parent)
+            block.ret.type = var.type
+            if block.ret.type.size != 8:
+                raise ParseException(f'only 8-byte fow now', child)
+            insert_copy(block, var, block.ret)
+            return block
+        else:
+            if not isinstance(var.type, Callable):
+                raise ParseException(
+                    f'Type `{var.type.id}` is not callable', child)
+
+            # call stack_mem
+            #
+            #  ____old___
+            #  PhantomBlock() ret <- stack_ptr
+            #  PhantomBlock() scope ret_addr
+            #  PhantomBlock() arg1
+            #  PhantomBlock() arg2
+            #  fn_local_block
+
+            # call convetiont
+            #
+            # __old_code__
+            # arg1_block
+            # arg1_copy
+            # arg2_block
+            # arg2_copy
+
+            block = Block(parent)
+            block.ret.type = var.type.ret
+            ret_addr_var = ScopeEntry(u64_type)
+            ret_addr_label = Object()
+
+            block.scope.add('ret_addr', ret_addr_var, child)
+
+            block.content.append(Instruction('cmd->acc', ret_addr_label))
+            block.content.append(Instruction('local_set', ret_addr_var.obj))
+
+            args_blocks = [compile_block(exp, block.scope, glob)
+                           for exp in child.children[1:]]
+            for idx, arg_block in enumerate(args_blocks):
+                arg_scope_entry = ScopeEntry(arg_block.ret.type)
+                block.scope.add(f'_arg{idx}', arg_scope_entry, child)
+                block.content.append(arg_block)
+                insert_copy(block, arg_block.ret, arg_scope_entry)
+
+            block.content.append(Instruction('shift_stack', block.before_ret))
+            block.content.append(Instruction('jmp', var.obj))
+            block.content.append(ret_addr_label)
+            block.content.append(Instruction(
+                'unshift_stack', block.before_ret))
+
+            # ret_addr = Object()
+            # block.scope.add('ret_ptr', ScopeEntry())
+            # call_stack_begin = Object()
+
+            # block.content.append(call_stack_begin)
+            # for arg_block in args_blocks:
+            #     block.content.append(arg_block)
+
+            # block.ret.type = var.type
+            return block
 
 
-def compile_block(exp: Exp, parent: Scope) -> Block:
+def compile_block(exp: Exp, parent: Scope, glob: Scope) -> Block:
     block = Block(parent)
     if isinstance(exp, Nested):
         if len(exp.children) > 0 and isinstance(exp.children[0],  IdLiteral):
-            entry = compile_action(exp, parent)
+            entry = compile_action(exp, parent, glob)
             block.content.append(entry)
         else:
             for child in exp.children:
                 if isinstance(child, Nested) and len(child.children) > 0 and isinstance(child.children[0],  IdLiteral):
-                    entry = compile_action(child, block.scope)
+                    entry = compile_action(child, block.scope, glob)
                     block.content.append(entry)
                 else:
-                    entry = compile_block(child, block.scope)
+                    entry = compile_block(child, block.scope, glob)
                     block.content.append(entry)
         if len(block.content) > 0:
             last = block.content[-1]
@@ -371,17 +353,16 @@ def compile_block(exp: Exp, parent: Scope) -> Block:
         block.content.append(Instruction(
             'cmd->acc', Object(exp.val.to_bytes(4))))
         block.content.append(Instruction(
-            'stack_set', block.ret.stack_offset))
+            'local_set', block.ret.obj))
 
     elif isinstance(exp, IdLiteral):
         variable = block.scope.get(exp.val, exp)
         block.ret.type = variable.type
 
         block.content.append(Instruction(
-            'cmd->acc', variable.stack_offset))
-        block.content.append(Instruction('deref'))
+            'local_get', variable.obj))
         block.content.append(Instruction(
-            'stack_set', block.ret.stack_offset))
+            'local_set', block.ret.obj))
     else:
         raise ParseException('Expected block', exp=exp)
     if block.ret.type is None:
@@ -389,15 +370,15 @@ def compile_block(exp: Exp, parent: Scope) -> Block:
     return block
 
 
-def resolve_labels(list: list[Instruction | Object], base: int):
+def resolve_labels(list: list[Instruction | Object], base: int) -> tuple[Instruction, int]:
     res = []
     for entry in list:
         if isinstance(entry, Instruction):
             res.append(entry)
             base += 8
         elif isinstance(entry, Object):
-            entry.resolved = base.to_bytes(4)
-    return res
+            entry.set(base)
+    return res, base
 
 # def get_instr_functions(parent: Scope):
 #   return [

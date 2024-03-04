@@ -14,7 +14,7 @@ class Machine:
 
     descriptors: dict[int, Stream]
 
-    def __init__(self, name="AmogusPC", mem_size: int = 0x1000, stack: int = 0x400) -> None:
+    def __init__(self, name="AmogusPC", mem_size: int = 0x10000, stack: int = 0x10000) -> None:
         self.name = name
         self.memory = Memory(mem_size)
         self.cpu = CPU(stack)

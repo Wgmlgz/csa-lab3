@@ -28,11 +28,17 @@ class CS(enumerate):
     inc_8 = auto()
     dec_8 = auto()
     dec = auto()
-    add_u64 = auto()
+    add = auto()
+    sub = auto()
+    mul = auto()
     invert = auto()
     invert_bool = auto()
+    neg = auto()
     
     if_out = auto()
+    
+    div = auto()
+    rem = auto()
     
 
 class Microcode:
