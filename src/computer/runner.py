@@ -106,7 +106,9 @@ class Runner:
         while self.m.cpu.run:
             if config['debug']:
                 print('instruction fetch...')
-            self.exec_instr(instructions['load_cmd'])
+            self.m.cpu.cmd = self.m.memory.get(int.from_bytes(self.m.cpu.ip, signed=True), 8)
+            # self.exec_instr(instructions['load_cmd'])
+            
             tag = int.from_bytes(self.m.cpu.cmd[:4])
             opcode = opcode_by_tag.get(tag)
             instr = instructions.get(opcode)
@@ -117,4 +119,7 @@ class Runner:
             self.exec_instr(instr)
             if config['debug']:
                 print('inc ip...')
-            self.exec_instr(instructions['inc_ip'])
+            
+            self.m.cpu.ip = (int.from_bytes(self.m.cpu.ip,
+                              signed=True) + 8).to_bytes(8, signed=True)
+            # self.exec_instr(instructions['inc_ip'])
