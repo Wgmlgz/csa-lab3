@@ -58,8 +58,8 @@
   (fn factorial (n u64) u64  
     ((let r (if (eq n 0)
       (1)
-      (0)
-      ;; (mul n (factorial (sub n 1))   ))
+       (mul n (factorial (sub n 1))   )
+      ;;)
   )) (r)))
   (let a (factorial 1))
   (print_u64 (add (add (1) (2)) (2)))

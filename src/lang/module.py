@@ -30,30 +30,32 @@ class Module:
         except ParseException as e:
             lines = this.source.split('\n')
             
-            if e.exp is not None:
-                token = this.tokens[e.exp.begin]
-                end_token = this.tokens[e.exp.end]
-                pos = token.pos
-                end_pos = end_token.pos + len(end_token.val)
-                l = end_pos - pos
-                line_n = 1
-                while pos > len(lines[line_n - 1]):
-                    pos -= len(lines[line_n - 1]) + 1
-                    line_n += 1
-                # pos += 1
-                
-            elif e.token is not None:
-                pos = e.token.pos
-                line_n = 1
-                l = len(e.token.val)
-                while pos > len(lines[line_n - 1]):
-                    pos -= len(lines[line_n - 1]) + 1
-                    line_n += 1
+            if e.exp is not None or e.token is not None:
+                if e.exp is not None:
+                    token = this.tokens[e.exp.begin]
+                    end_token = this.tokens[e.exp.end]
+                    pos = token.pos
+                    end_pos = end_token.pos + len(end_token.val)
+                    l = end_pos - pos
+                    line_n = 1
+                    while pos > len(lines[line_n - 1]):
+                        pos -= len(lines[line_n - 1]) + 1
+                        line_n += 1
+                    # pos += 1
+                    
+                elif e.token is not None:
+                    pos = e.token.pos
+                    line_n = 1
+                    l = len(e.token.val)
+                    while pos > len(lines[line_n - 1]):
+                        pos -= len(lines[line_n - 1]) + 1
+                        line_n += 1
             else:
                 line_n = len(lines)
                 pos = 0
                 l = 1
-                
+            
+            l = min(l, len(lines[line_n - 1]) - pos)
             # pos += 1
             msg = f'ParseError: {e.msg}\n'
             msg += f'at file {this.path}:{line_n} {pos + 1} \n'

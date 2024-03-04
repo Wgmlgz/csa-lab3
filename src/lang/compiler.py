@@ -79,7 +79,9 @@ def compile_instr(exp: Exp, scope: Scope) -> Entry:
 
 
 # copy from a to b
-def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry):
+def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp):
+    if a.type.id != b.type.id:
+        raise ParseException(f'Types don\'t match {a.type.id} {b.type.id}', exp)
     if a.obj.id == b.obj.id:
         return
     if a.type.size != 0:
@@ -116,11 +118,11 @@ def compile_if(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None
     block.content.append(Instruction('local_get', cond.ret.obj))
     block.content.append(Instruction('jmp_if_false', label_begin))
     block.content.append(t)
-    insert_copy(block, t.ret, block.ret)
+    insert_copy(block, t.ret, block.ret, child)
     block.content.append(Instruction('jmp', label_end))
     block.content.append(label_begin)
     block.content.append(f)
-    insert_copy(block, f.ret, block.ret)
+    insert_copy(block, f.ret, block.ret, child)
     block.content.append(label_end)
     return block
 
@@ -147,7 +149,7 @@ def compile_while(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = N
     block.content.append(Instruction('local_get', cond.ret.obj))
     block.content.append(Instruction('jmp_if_false', label_end))
     block.content.append(body)
-    insert_copy(block, body.ret, block.ret)
+    insert_copy(block, body.ret, block.ret, child)
     block.content.append(Instruction('jmp', label_begin))
     block.content.append(label_end)
     return block
@@ -163,6 +165,19 @@ def compile_let(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = Non
     var_name = child.children[1].val
     body = compile_block(child.children[2], parent, glob, ret)
     parent.add(var_name, body.ret, child.children[1])
+    return body
+
+
+def compile_set(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) -> Block:
+    if len(child.children) != 3:
+        raise ParseException(
+            f'Expected 2 arguments e.g. `set x val`', child)
+    if not isinstance(child.children[1], IdLiteral):
+        raise ParseException(
+            f'Expected identifier e.g. `set x val`', child.children[1])
+    var_name = child.children[1].val
+    var = parent.get(var_name, child.children[1])
+    body = compile_block(child.children[2], parent, glob, var)
     return body
 
 
@@ -216,17 +231,15 @@ def compile_fn(exp: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) 
     #     raise ParseException(
     #         f'Expected nested args declaration e.g. `((arg1 type1)...)`', exp.children[2])
 
-
-
     body = compile_block(exp.children[-1], block.scope, glob, block.ret)
     block.content.append(body)
-    
-    if block.ret.type != body.ret.type:
+
+    if block.ret.type != ret_type:
         raise ParseException(
             f'Body return type `{body.ret.type.id}` don\'t match declaration type `{block.ret.type.id}`',
             exp.children[-1])
 
-    insert_copy(block, body.ret, block.ret)
+    insert_copy(block, body.ret, block.ret, child)
     block.content.append(Instruction('local_get', ret_entry.obj))
     block.content.append(Instruction('jmp_acc'))
     block.resolve_offsets(0)
@@ -242,6 +255,65 @@ def compile_fn(exp: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) 
     return ret_block
 
 
+binary_operators = ['+', '-', '*', '/', '%', '=', '!=', '<=', '>=']
+unary_operators = ['neg', 'inv', '!']
+operators = binary_operators + unary_operators
+
+
+def compile_operator(exp: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) -> Block:
+    block = Block(parent, ret)
+    op = exp.children[0].val
+    if op in binary_operators:
+        if len(exp.children) != 3:
+            raise ParseException(
+                f'Expected 2 arguments `({op} a b)`, found({len(exp.children)})', exp)
+        a_ret = ScopeEntry(u64_type)
+        b_ret = ScopeEntry(u64_type)
+        block.scope.add('a', a_ret, exp)
+        block.scope.add('b', b_ret, exp)
+        a = compile_block(exp.children[1], block.scope, glob, a_ret)
+        b = compile_block(exp.children[2], block.scope, glob, b_ret)
+        if a.ret.type != u64_type:
+            raise ParseException(
+                f'Expected u64', exp.children[1])
+        if b.ret.type != u64_type:
+            raise ParseException(
+                f'Expected u64', exp.children[2])
+        block.content.append(a)
+        block.content.append(b)
+        block.content.append(Instruction('local_get', a.ret.obj))
+        if op == '+':
+            block.content.append(Instruction('add_local', b.ret.obj))
+        elif op == '-':
+            block.content.append(Instruction('sub_local', b.ret.obj))
+        elif op == '*':
+            block.content.append(Instruction('mul_local', b.ret.obj))
+        elif op == '/':
+            block.content.append(Instruction('div_local', b.ret.obj))
+        elif op == '%':
+            block.content.append(Instruction('rem_local', b.ret.obj))
+        elif op == '=':
+            block.content.append(Instruction('sub_local', b.ret.obj))
+            block.content.append(Instruction('invert_bool'))
+        elif op == '!=':
+            block.content.append(Instruction('sub_local', b.ret.obj))
+        else:
+            raise ParseException(
+                f'Unhandled operator ({op})`', exp)
+        block.content.append(Instruction('local_set', block.ret.obj))
+        block.ret.type = u64_type
+    elif op in unary_operators:
+        raise ParseException(
+            f'Unhandled operator ({op})`', exp)
+        if len(exp.children) != 2:
+            raise ParseException(
+                f'Expected 1 argument `({op} a)`, found({len(exp.children)})', exp)
+    else:
+        raise ParseException(
+            f'Unhandled operator ({op})`', exp)
+    return block
+
+
 def compile_action(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = None) -> Block:
     first_child = child.children[0]
     id = first_child.val
@@ -249,12 +321,16 @@ def compile_action(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = 
         return compile_instr(child, parent)
     elif id == 'let':
         return compile_let(child, parent, glob, ret)
+    elif id == 'set':
+        return compile_set(child, parent, glob, ret)
     elif id == 'if':
         return compile_if(child, parent, glob, ret)
     elif id == 'while':
         return compile_while(child, parent, glob, ret)
     elif id == 'fn':
         return compile_fn(child, parent, glob, ret)
+    elif id in operators:
+        return compile_operator(child, parent, glob, ret)
     else:
         # else:
         var = parent.get(id, child)
@@ -263,7 +339,7 @@ def compile_action(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = 
             block.ret.type = var.type
             if block.ret.type.size != 8:
                 raise ParseException(f'only 8-byte fow now', child)
-            insert_copy(block, var, block.ret)
+            insert_copy(block, var, block.ret, child)
             return block
         else:
             if not isinstance(var.type, Callable):
@@ -297,13 +373,21 @@ def compile_action(child: Nested, parent: Scope, glob: Scope, ret: ScopeEntry = 
             block.content.append(Instruction('cmd->acc', ret_addr_label))
             block.content.append(Instruction('local_set', ret_addr_var.obj))
 
+            if len(child.children[1:]) != len(var.type.args):
+                raise ParseException(
+                        f'Number of arguments don\'t match: {len(child.children[1:])} {len(var.type.args)}', child)
             for idx, exp in enumerate(child.children[1:]):
                 arg_scope_entry = ScopeEntry(var.type.args[idx])
-                
-                arg_block = compile_block(exp, block.scope, glob, arg_scope_entry)
+
+                arg_block = compile_block(
+                    exp, block.scope, glob, arg_scope_entry)
+
+                if arg_block.ret.type.id != arg_scope_entry.type.id:
+                    raise ParseException(
+                        f'types don\'t match: {arg_block.ret.type.id } {arg_scope_entry.type.id}', exp)
                 block.scope.add(f'_arg{idx}', arg_scope_entry, child)
                 block.content.append(arg_block)
-                insert_copy(block, arg_block.ret, arg_scope_entry)
+                insert_copy(block, arg_block.ret, arg_scope_entry, exp)
 
             block.content.append(Instruction('shift_stack', block.before_ret))
             block.content.append(Instruction('jmp', var.obj))
@@ -331,7 +415,7 @@ def compile_block(exp: Exp, parent: Scope, glob: Scope, ret: ScopeEntry = None) 
             block.content.append(entry)
         else:
             for idx, child in enumerate(exp.children):
-                if idx == len(exp.children) -1:
+                if idx == len(exp.children) - 1:
                     child_ret = block.ret
                 else:
                     child_ret = None
@@ -346,7 +430,7 @@ def compile_block(exp: Exp, parent: Scope, glob: Scope, ret: ScopeEntry = None) 
             if isinstance(last, Block):
                 block.ret.type = last.ret.type
                 insert_copy(block, last.ret,
-                            block.ret)
+                            block.ret, exp)
     elif isinstance(exp, IntLiteral):
         block.ret.type = u64_type
 
@@ -359,7 +443,7 @@ def compile_block(exp: Exp, parent: Scope, glob: Scope, ret: ScopeEntry = None) 
         variable = block.scope.get(exp.val, exp)
         block.ret.type = variable.type
 
-        insert_copy(block, variable, block.ret)
+        insert_copy(block, variable, block.ret, exp)
     else:
         raise ParseException('Expected block', exp=exp)
     if block.ret.type is None:
