@@ -6,9 +6,12 @@
   "scripts": {
     "compile-dev": "python ./src/main.py ./examples/sus/test.lsp -d",
     "compile": "python ./src/main.py ./examples/sus/test.lsp",
-    "dev": "python ./src/main.py ./examples/bin/hi.json -r"
+    "dev": "python ./src/main.py ./examples/sus/test.lsp -c -r"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "sus": "^0.1.6"
+  }
 }

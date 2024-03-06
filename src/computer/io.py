@@ -12,6 +12,7 @@ class Stream:
   
   def write(self, data: bytes):
     self.data += data
+    self.ptr += len(data)
     
   def __str__(self) -> str:
     s = self.data

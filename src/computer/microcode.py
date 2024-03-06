@@ -40,6 +40,12 @@ class CS(enumerate):
     div = auto()
     rem = auto()
     
+    
+    s_8 = auto()
+    s_4 = auto()
+    s_2 = auto()
+    s_1 = auto()
+    
 
 class Microcode:
     cs: list[list[CS]]

@@ -17,10 +17,22 @@ class Runner:
         return self.m.descriptors.get(self.int_ptr())
 
     def exec_tick(self, tick_cs: list[CS]):
+        
         if CS.halt in tick_cs:
             self.m.cpu.run = False
             return
-
+        
+        
+        op_size = self.m.word_size
+        if CS.s_8 in tick_cs:
+            op_size = 8
+        if CS.s_4 in tick_cs:
+            op_size = 4
+        if CS.s_2 in tick_cs:
+            op_size = 4
+        if CS.s_1 in tick_cs:
+            op_size = 1
+            
         input_list: list[bytes] = []
         if CS.in_acc in tick_cs:
             input_list.append(self.m.cpu.acc)
@@ -31,20 +43,24 @@ class Runner:
         if CS.in_ip in tick_cs:
             input_list.append(self.m.cpu.ip)
         if CS.in_io in tick_cs:
-            input_list.append(self.get_stream())
+            input_list.append(self.get_stream().read(op_size))
         if CS.in_mem in tick_cs:
-            input_list.append(self.m.memory.get(self.int_ptr()))
+            input_list.append(self.m.memory.get(self.int_ptr(), op_size))
         if CS.in_stack in tick_cs:
             input_list.append(self.m.cpu.stack)
 
+        input_list = [i[-op_size:] for i in input_list]
         int_list = [int.from_bytes(i, signed=True) for i in input_list]
-
+        
         if (
             CS.div in tick_cs or
             CS.rem in tick_cs or
             CS.sub in tick_cs or
             CS.mul in tick_cs
         ):
+            if int_list[1] == 0:
+                pass
+            
             if len(int_list) != 2:
                 raise RuntimeError(
                     'you have destroyed and betrayed yourself for nothing')
@@ -76,7 +92,7 @@ class Runner:
                 res = res == 0
 
         if (CS.if_out in tick_cs and int.from_bytes(self.m.cpu.acc) != 0) or (CS.if_out not in tick_cs):
-            bytes_res = res.to_bytes(8, signed=True)
+            bytes_res = res.to_bytes(op_size, signed=True)
             if CS.out_acc in tick_cs:
                 self.m.cpu.acc = bytes_res
             if CS.out_ptr in tick_cs:
@@ -97,7 +113,7 @@ class Runner:
             self.exec_tick(tick_cs)
             if config['interactive']:
                 print(self.m)
-                input('press any key to continue...')
+                input()
             if config['debug']:
                 print(self.m.cpu)
 
@@ -115,7 +131,7 @@ class Runner:
 
             if config['debug']:
                 print('exec...')
-                print(opcode, instr)
+                print(opcode, int.from_bytes(self.m.cpu.cmd[-4:]))
             self.exec_instr(instr)
             if config['debug']:
                 print('inc ip...')

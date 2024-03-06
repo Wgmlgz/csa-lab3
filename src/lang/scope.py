@@ -1,66 +1,35 @@
-
 from typing import Optional
 from lang.exp import Exp, ParseException
+from lang.types import Type
 from utils import tab
 
 
-class Type:
-    id: str
-    size: int
-
-    def __init__(self, id: str = '()', size=0) -> None:
-        self.id = id
-        self.size = size
-
-    def __str__(self) -> str:
-        return f'{self.id}[{self.size}]'
-      
-class Callable(Type):
-    args: list[Type]
-    ret: Type
-    
-    def __init__(self, args: list[Type], ret: Type) -> None:
-      self.args = args
-      self.ret = ret
-      args = ' '.join(f'({arg.id})' for arg in args)
-      id = f'({args}) -> {ret.id}'
-          
-      super().__init__(id, 8)
-
-    def __str__(self) -> str:
-        return f'{self.id}[{self.size}]'
-
 class ScopeEntry:
     type: Optional[Type]
-    obj: 'Object'
+    obj: "Object"
 
     def __init__(self, type: Type = None) -> None:
         self.type = type
         self.obj = Object()
 
     def __str__(self) -> str:
-        s = f'{str(self.type)} at {str(self.obj)}'
+        s = f"{str(self.type)} at {str(self.obj)}"
         return s
 
 
-void_type = Type('()', 0)
-u64_type = Type('u64', 8)
-
-
 class Scope:
-    parent: Optional['Scope']
+    parent: Optional["Scope"]
     locals: dict[str, ScopeEntry]
     types: dict[str, Type]
 
-    def __init__(self, parent: Optional['Scope'] = None) -> None:
+    def __init__(self, parent: Optional["Scope"] = None) -> None:
         self.parent = parent
         self.locals = {}
         self.types = {}
 
     def add(self, id: str, scope_entry: ScopeEntry, exp: Exp) -> Optional[str]:
         if id in self.locals:
-            raise ParseException(
-                f'Variable {id} is already defined in this scope', exp)
+            raise ParseException(f"Variable {id} is already defined in this scope", exp)
         self.locals[id] = scope_entry
 
     def get(self, id: str, exp: Exp) -> ScopeEntry:
@@ -69,37 +38,36 @@ class Scope:
         elif self.parent is not None:
             return self.parent.get(id, exp)
         else:
-            raise ParseException(f'Undefined variable `{id}`', exp)
+            raise ParseException(f"Undefined variable `{id}`", exp)
 
     def add_type(self, id: str, type_entry: Type, exp: Exp) -> Optional[str]:
         if id in self.types:
-            raise ParseException(
-                f'Type {id} is already defined in this scope', exp)
+            raise ParseException(f"Type {id} is already defined in this scope", exp)
         self.types[id] = type_entry
 
-    def get_type(self, id: str, exp: Exp) -> ScopeEntry:
+    def get_type(self, id: str, exp: Exp) -> Type:
         if id in self.types:
             return self.types[id]
         elif self.parent is not None:
             return self.parent.get_type(id, exp)
         else:
-            raise ParseException(f'Undefined type `{id}`', exp)
+            raise ParseException(f"Undefined type `{id}`", exp)
 
     def __str__(self) -> str:
         if len(self.locals) == 0 and len(self.types) == 0:
-            return 'EmptyScope'
-        s = 'Scope:\n  '
+            return "EmptyScope"
+        s = "Scope:\n  "
         if len(self.locals) != 0:
-            s += '\n  '.join(f'{key}: {val.type} at {val.obj}' for key,
-                             val in self.locals.items())
+            s += "\n  ".join(
+                f"{key}: {val.type} at {val.obj}" for key, val in self.locals.items()
+            )
         if len(self.types) != 0:
-            s += '\n  T: '.join(f'{key}: {str(val)}' for key,
-                                val in self.types.items())
+            s += "\n  T: ".join(f"{key}: {str(val)}" for key, val in self.types.items())
         return s
 
     def resolve_offsets(self, base: int):
         for entry in self.locals.values():
-            if entry.obj.resolved is None:
+            if entry.obj.get() is None:
                 base -= entry.type.size
                 entry.obj.set(base)
         return base
@@ -114,31 +82,57 @@ class Object:
     id: str
     resolved: Optional[bytes]
     name: Optional[str]
-    
+
     def __init__(self, resolved=None, name=None) -> None:
         global static_id
         self.id = str(static_id)
         static_id = static_id + 1
         self.resolved = resolved
+        if isinstance(resolved, int):
+            self.set(resolved)
         self.name = name
 
     def __str__(self) -> str:
         if self.name is not None:
-          s = self.name + '.'
+            s = self.name + "."
         else:
-          s = 'o.'
-        s += f'{self.id}'
+            s = "o."
+        s += f"{self.id}"
         if self.resolved is not None:
-            s += f':{self.resolved}'
+            s += f":{self.resolved}"
         return s
 
     def __repr__(self) -> str:
         return str(self)
-    
+
     def set(self, val: int):
         resolved = int.to_bytes(val, 4, signed=True)
         self.resolved = resolved
-      
+
+    def get(self):
+        return self.resolved
+
+
+class OffsetObject:
+    obj: Object
+    offset: int
+
+    def __init__(self, obj: Object, offset=0) -> None:
+        self.obj = obj
+        self.offset = offset
+
+    def __str__(self) -> str:
+        s = f"{str(self.obj)}{self.offset:+}"
+        return s
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    def get(self):
+        return (int.from_bytes(self.obj.resolved, signed=True) + self.offset).to_bytes(
+            4, signed=True
+        )
+
 
 class Instruction:
     id: str
@@ -149,10 +143,10 @@ class Instruction:
         self.arg = arg
 
     def __str__(self) -> str:
-        s = ''
+        s = ""
         s += self.id
         if self.arg is not None:
-            s += f' {str(self.arg)}'
+            s += f" {str(self.arg)}"
         return s
 
     def __repr__(self) -> str:
@@ -160,17 +154,52 @@ class Instruction:
 
     def to_list(self):
         res = [self.id]
-        if self.arg is not None and self.arg.resolved is not None:
-            res.append(int.from_bytes(self.arg.resolved))
+        if self.arg is not None and self.arg.get() is not None:
+            res.append(int.from_bytes(self.arg.get()))
         return res
-      
+
+
+class Constants:
+    constant: bytes
+
+    def __init__(self, val: bytes) -> None:
+        self.constant = val
+
+    def __str__(self) -> str:
+        s = "const."
+        s += f"{self.constant}"
+        return s
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    def flatten(self) -> list[int]:
+        res = []
+        for byte in self.constant:
+            res.append(byte)
+        return res
+
+
+# def flatten_entries(content: list["Entry"]):
+#     res = []
+#     for entry in content:
+#         if isinstance(entry, Instruction):
+#             res.append(entry)
+#         elif isinstance(entry, Block):
+#             res.extend(entry.flatten())
+#         elif isinstance(entry, Object):
+#             res.append(entry)
+#         if isinstance(entry, Constants):
+#             res.extend(entry.flatten())
+#     return res
+
 
 class Block:
     scope: Scope
     before_ret: Optional[Object]
     ret: ScopeEntry
-    content: list['Entry']
-    global_entries: list['Entry']
+    content: list["Entry"]
+    global_entries: list["Entry"]
 
     def __init__(self, parent: Scope, ret: ScopeEntry = None) -> None:
         self.scope = Scope(parent)
@@ -183,18 +212,18 @@ class Block:
             self.before_ret = Object()
 
     def __str__(self) -> str:
-        s = f'Block -> {self.ret}\n'
-        s += tab(str(self.scope)) + '\n[\n'
-        s += tab('\n'.join([str(instr) for instr in self.content]))
-        s += '\n]'
+        s = f"Block -> {self.ret}\n"
+        s += tab(str(self.scope)) + "\n[\n"
+        s += tab("\n".join([str(instr) for instr in self.content]))
+        s += "\n]"
         if len(self.global_entries) != 0:
-          s += ' glob code: [\n'
-          s += tab('\n'.join([str(instr) for instr in self.global_entries]))
-          s += '\n]'
+            s += " glob code: [\n"
+            s += tab("\n".join([str(instr) for instr in self.global_entries]))
+            s += "\n]"
         return s
 
     def resolve_offsets(self, base: int) -> int:
-        if self.ret.obj.resolved is None:
+        if self.ret.obj.get() is None:
             self.before_ret.set(base)
             base -= self.ret.type.size
             self.ret.obj.set(base)
@@ -205,31 +234,49 @@ class Block:
             if isinstance(entry, Block):
                 entry.resolve_offsets(base)
         return after_ret
-    
-    def flatten(self) -> list[Instruction | Object]:
-        res = []
+
+    def flatten(self) -> tuple[list[Instruction | Object | int], list[Instruction | Object | int]]:
+        local = []
+        glob = []
+        after_global = []
         for entry in self.content:
             if isinstance(entry, Instruction):
-                res.append(entry)
+                local.append(entry)
             elif isinstance(entry, Block):
-                res.extend(entry.flatten())
+                child_local, child_glob = entry.flatten()
+                local.extend(child_local)
+                glob.extend(child_glob)
             elif isinstance(entry, Object):
-                res.append(entry)
-        return res
-    
-    def flatten_global(self) -> list[Instruction | Object]:
-        res = []
+                local.append(entry)
+            if isinstance(entry, Constants):
+                local.extend(entry.flatten())
+        
         for entry in self.global_entries:
             if isinstance(entry, Instruction):
-                res.append(entry)
+                glob.append(entry)
             elif isinstance(entry, Block):
-                res.extend(entry.flatten())
+                child_local, child_glob = entry.flatten()
+                glob.extend(child_local)
+                after_global.extend(child_glob)
             elif isinstance(entry, Object):
-                res.append(entry)
-        for entry in self.content:
-          if isinstance(entry, Block):
-              res.extend(entry.flatten_global())
-        return res
+                glob.append(entry)
+            if isinstance(entry, Constants):
+                glob.extend(entry.flatten())
+        glob.extend(after_global)
+        return local, glob
+        # local = flatten_entries(self.content)
+        # glob = flatten_entries(self.global_entries)
+        # for entry in self.content:
+        #     if isinstance(entry, Block):
+        #         res.extend(entry.flatten())
+        # return flatten_entries(self.content)
+
+    # def flatten_global(self) -> list[Instruction | Object | int]:
+    #     res = flatten_entries(self.global_entries)
+    #     for entry in self.content:
+    #         if isinstance(entry, Block):
+    #             res.extend(entry.flatten())
+    #     return res
 
 
-Entry = Instruction | Block | Object
+Entry = Instruction | Block | Object | Constants

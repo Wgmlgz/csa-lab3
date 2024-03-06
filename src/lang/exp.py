@@ -23,9 +23,13 @@ class Nested(Exp):
   
 class IntLiteral(Exp):
   val: int
-  def __init__(self, val: int) -> None:
+  type: Optional[str]
+  
+  def __init__(self, val: int, type: str = None) -> None:
     super().__init__()
     self.val  = val
+    self.type = type
+    
   def to_string(self) -> str:
     return f'Int({self.val})'
   
@@ -64,11 +68,16 @@ class ParseException(Exception):
       self.exp = pos
     
 def parse_exp(tokens: list[Token]) -> Exp:
-  exp, cursor = parse_general(tokens)
-  if cursor < len(tokens):
-    raise ParseException('Unexpected (possibly extra `)`):', tokens[cursor])
+  res = Nested()
+ 
+  cursor = 0
+  while cursor < len(tokens):
+    exp, cursor = parse_general(tokens, cursor)
+    res.children.append(exp)
     
-  return exp
+    # raise ParseException('Unexpected (possibly extra `)`):', tokens[cursor])
+    
+  return res
 
 def parse_atom(tokens: list[Token], cursor: int) -> tuple:
     if cursor >= len(tokens):
@@ -78,8 +87,20 @@ def parse_atom(tokens: list[Token], cursor: int) -> tuple:
     if token.type == TokenType.ID:
         child = IdLiteral(token.val)
     elif token.type == TokenType.INT:
-        res = eval(token.val)
-        child = IntLiteral(res)
+        type =  'u64'
+        val = token.val
+        if 'u64' in val: type = 'u64'
+        if 'u32' in val: type = 'u32'
+        if 'u16' in val: type = 'u16'
+        if 'u8' in val: type = 'u8'
+        if 'i64' in val: type = 'i64'
+        if 'i32' in val: type = 'i32'
+        if 'i16' in val: type = 'i16'
+        if 'i8' in val: type = 'i8'
+        if type in val: val = val[:-(len(type))]
+        
+        res = eval(val)
+        child = IntLiteral(res, type)
     elif token.type == TokenType.STR:
         escaped = eval(token.val)
         child = StrLiteral(escaped)

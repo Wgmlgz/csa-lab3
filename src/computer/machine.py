@@ -13,13 +13,15 @@ class Machine:
     stdout: Stream
 
     descriptors: dict[int, Stream]
-
-    def __init__(self, name="AmogusPC", mem_size: int = 0x10000, stack: int = 0x10000) -> None:
+    word_size: int
+    
+    def __init__(self, name="AmogusPC", mem_size: int = 0x10000, stack: int = 0x10000, word_size=8) -> None:
         self.name = name
         self.memory = Memory(mem_size)
-        self.cpu = CPU(stack)
+        self.cpu = CPU(stack, main_ptr=0x0, reg_size=word_size)
         self.stdin = Stream('amogus test')
         self.stdout = Stream()
+        self.word_size = word_size
 
         self.descriptors = {
             0: self.stdin,

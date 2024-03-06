@@ -9,18 +9,24 @@ class Memory:
         self.n = len
         self.content = bytearray(len)
 
-    def load_instructions(self, instructions: list[list]):
+    def load_instructions(self, instructions: list[list], word_size):
         idx = 0
         for j_instruction in instructions:
-            tag = tag_by_opcode.get(j_instruction[0])
-            arg = 0
-            if len(j_instruction) > 1:
-                arg = j_instruction[1]
-            arg = any_to_arg(arg)
+            entry = j_instruction[0]
+            if isinstance(entry, str):
+                tag = tag_by_opcode.get(entry)
+                arg = 0
+                if len(j_instruction) > 1:
+                    arg = j_instruction[1]
+                arg = any_to_arg(arg)
 
-            instruction = tag.to_bytes(4) + arg
-            self.set(idx, instruction)
-            idx += 8
+                instruction = tag.to_bytes(4) + arg
+                self.set(idx, instruction)
+                idx += word_size
+            else:
+                self.set(idx, int.to_bytes(entry, 1, signed=True))
+                idx += 1
+                
             
     def load_json(self, p: str):
         with open(p) as f:
@@ -29,7 +35,7 @@ class Memory:
             self.load_instructions(instructions)
             
             
-    def get(self, idx: int, size=8) -> bytes:
+    def get(self, idx: int, size) -> bytes:
         if idx + size > self.n:
             raise Exception('reach outside memory')
         res = self.content[idx: idx + size]

@@ -5,10 +5,6 @@ from computer.machine import Machine
 from utils import config
 import sys
 
-class Susser:    
-  def run(entry_path: str):
-    pass
-
 USAGE_STR = '''
 Usage: python <script-path> <input-file> [-d/--debug] [-r/--run] [-c/--run]
   Flags:
@@ -36,13 +32,14 @@ def main():
   
   try:
     machine = Machine()
-    machine.memory.set(0, 0x00_00_00_01_00_00_00_00.to_bytes(8))
+    # machine.memory.set(0, 0x00_00_00_01_00_00_00_00.to_bytes(machine.word_size))
     
     if config['compile']:
       mod = Module(file_path)
+      mod.link()
       executable = mod.exe
       dict = executable.to_dict()
-      machine.memory.load_instructions(dict['instructions'])
+      machine.memory.load_instructions(dict['instructions'], machine.word_size)
       
     elif config['run']:
       machine.memory.load_json(file_path)

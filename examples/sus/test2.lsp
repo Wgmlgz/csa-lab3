@@ -38,15 +38,6 @@
       (div_local base)
       (local_set cur)))))
   
-  (fn factorial (n u64) u64  
-    (if (eq n 0)
-      1
-      (mul n (factorial (sub n 1)))))
-
-  (fn fib (n u64) u64  
-    (if (eq n 0) 0
-    (if (eq n 1) 1
-      (add (fib (sub n 1)) (fib (sub n 2))))))
   ;; (fn ttt (n u64) u64 (if (eq n 0) 2 3))
   ;; (let a (if 0 2 3))
   ;; (let b (factorial 5))

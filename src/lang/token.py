@@ -26,7 +26,7 @@ tokens_def = [
   (r"\(", TokenType.OPEN),
   (r"\)", TokenType.CLOSE),
   (r"\"[^\"]*\"", TokenType.STR),
-  (r"\d+", TokenType.INT),
+  (r"\d+(?:(?:u|i)(?:8|16|32|64))?", TokenType.INT),
   (r";;.*", TokenType.COMMENT),
   (r"[^\s\(\)\d][^\s\(\)]*", TokenType.ID),
 ]

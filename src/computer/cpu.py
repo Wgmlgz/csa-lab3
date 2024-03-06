@@ -9,12 +9,12 @@ class CPU:
     # flags
     run: bool
     
-    def __init__(self, stack: int, main_ptr = 0x00) -> None:
-        self.acc = int(0).to_bytes(8)
-        self.ip = main_ptr.to_bytes(8)
-        self.ptr = int(0).to_bytes(8)
-        self.cmd = int(0).to_bytes(8)
-        self.stack = stack.to_bytes(8)
+    def __init__(self, stack: int, main_ptr, reg_size) -> None:
+        self.acc = int(0).to_bytes(reg_size)
+        self.ip = main_ptr.to_bytes(reg_size)
+        self.ptr = int(0).to_bytes(reg_size)
+        self.cmd = int(0).to_bytes(reg_size)
+        self.stack = stack.to_bytes(reg_size)
         self.run = False
         
     # def __str__(self) -> str:

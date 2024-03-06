@@ -20,6 +20,9 @@ instructions = {
 
     # acc = *acc
     'deref': Microcode([[CS.in_acc, CS.out_ptr], [CS.in_mem, CS.out_acc]]),
+    'deref_4': Microcode([[CS.in_acc, CS.out_ptr], [CS.in_mem, CS.s_4, CS.out_acc]]),
+    'deref_2': Microcode([[CS.in_acc, CS.out_ptr], [CS.in_mem, CS.s_2, CS.out_acc]]),
+    'deref_1': Microcode([[CS.in_acc, CS.out_ptr], [CS.in_mem, CS.s_1, CS.out_acc]]),
 
     # 'set': Microcode([[CS.in_acc, CS.out_mem]]),
 
@@ -47,10 +50,19 @@ instructions = {
     'shift_stack': Microcode([[CS.in_stack, CS.in_cmd, CS.out_stack]]),
     'unshift_stack': Microcode([[CS.in_cmd, CS.neg, CS.out_acc], [CS.in_stack, CS.in_acc, CS.out_stack]]),
   
+    # `acc = (cmd + stack)`
+    'local_ptr': Microcode([[CS.in_stack, CS.in_cmd, CS.out_acc]]),
     # `*(cmd + stack) = acc`
     'local_set': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.in_acc, CS.out_mem]]),
     # `acc = *(cmd + stack)`
     'local_get': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.in_mem, CS.out_acc]]),
+
+    'local_set_4': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.s_4, CS.in_acc, CS.out_mem]]),
+    'local_get_4': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.s_4, CS.in_mem, CS.out_acc]]),
+    'local_set_2': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.s_2, CS.in_acc, CS.out_mem]]),
+    'local_get_2': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.s_2, CS.in_mem, CS.out_acc]]),
+    'local_set_1': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.s_1, CS.in_acc, CS.out_mem]]),
+    'local_get_1': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.s_1, CS.in_mem, CS.out_acc]]),
     
     # `*(cmd) = acc`
     'global_set': Microcode([[CS.in_cmd, CS.out_ptr], [CS.in_acc, CS.out_mem]]),
@@ -79,6 +91,7 @@ instructions = {
     'jmp_if_false': Microcode([[CS.in_acc, CS.invert_bool, CS.out_acc], [CS.in_cmd, CS.dec_8, CS.if_out, CS.out_ip]]),
 
     # math
+    'add_cmd': Microcode([[CS.in_cmd, CS.in_acc, CS.out_acc]]),
     'add_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.out_acc] ]),
     'sub_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.sub, CS.out_acc] ]),
     'mul_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.mul, CS.out_acc] ]),
