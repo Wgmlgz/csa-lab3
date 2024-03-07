@@ -15,14 +15,15 @@ class Module:
     tokens: Optional[list[Token]]
 
     exp: Optional[Exp]
-    exe: Optional["Executable"]
-    global_scope: Optional["Scope"]
+    # exe: Optional["Executable"]
+    # global_scope: Optional["Scope"]
     parent: Optional["Module"]
     block: Optional[Block]
 
-    def __init__(self, base_path: str, parent: "Module" = None) -> None:
+    def __init__(self, base_path: str, parent: Optional["Module"] = None) -> None:
         from lang.compiler import Executable, Scope, compile_block, resolve_labels
-
+        self.exe: Optional[Executable]
+        self.global_scope: Scope
         try:
             self.parent = parent
             if parent is None:
@@ -48,10 +49,14 @@ class Module:
             raise Exception(msg)
 
     def handle_parse_exception(self, e: ParseException) -> str:
+        if self.source is None:
+            raise Exception('No source')
         lines = self.source.split("\n")
 
         if e.exp is not None or e.token is not None:
             if e.exp is not None:
+                if self.tokens is None:
+                    raise Exception("No tokens")
                 token = self.tokens[e.exp.begin]
                 end_token = self.tokens[e.exp.end]
                 pos = token.pos
@@ -84,12 +89,11 @@ class Module:
         msg += " " * pos + (" " * l + "^" if e.after else "^" * l)
         return msg
 
-    def resolve_path(self) -> str:
+    def resolve_path(self):
         if self.parent is not None:
             fin_path = Path(self.parent.path).parent.joinpath(self.base_path)
         else:
             fin_path = Path(self.base_path)
-        # fin_path = fin_path.with_suffix('')
         self.path = fin_path
 
     def init_source(this):
@@ -100,15 +104,22 @@ class Module:
         except:
             raise Exception(f"Failed to resolve file {file_path}")
 
-    def tokenize(this) -> None:
-        this.tokens = tokenize(this.source)
+    def tokenize(self) -> None:
+        if self.source is None:
+            raise Exception('No source')
+        self.tokens = tokenize(self.source)
 
     def parse_exp(self) -> None:
+        if self.tokens is None:
+            raise Exception(f"No tokens")
+            
         self.exp = parse_exp(self.tokens)
         if config["debug"]:
             print(self.exp.to_string())
 
     def compile(self):
+        if self.exp is None:
+            raise Exception(f"No exp")
         from lang.compiler import Executable, Scope, compile_block, resolve_labels
 
         exp = self.exp

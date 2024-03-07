@@ -50,12 +50,13 @@ class Callable(Type):
     def __init__(self, args: list[Type], ret: Type) -> None:
         self.args = args
         self.ret = ret
-        args = " ".join(f"({arg.id})" for arg in args)
-        id = f"({args}) -> {ret.id}"
+        s_args = " ".join(f"({arg.id})" for arg in args)
+        id = f"({s_args}) -> {ret.id}"
 
         super().__init__(id, 8)
 
 
+undefined_type = Type("undefined", 666)
 void_type = Type("()", 0)
 u8_type = Type("u8", 1)
 u64_type = Type("u64", 8)

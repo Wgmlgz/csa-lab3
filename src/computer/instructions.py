@@ -1,15 +1,15 @@
 from computer.microcode import Microcode, CS
 
 
-def any_to_arg(arg=0) -> bytes:
+def any_to_arg(arg: int | str = 0) -> bytes:
     if isinstance(arg, int):
-        arg = arg.to_bytes(4)
+        res = arg.to_bytes(4)
     elif isinstance(arg, str):
         if len(arg) < 4:
-            arg = (4 - len(arg)) * '\0' + arg
-        arg = arg[:4]
-        arg = str.encode(arg)
-    return arg
+            t = (4 - len(arg)) * '\0' + arg
+        s = t[:4]
+        res = str.encode(s)
+    return res
 
 
 instructions = {
@@ -46,10 +46,10 @@ instructions = {
     # `acc = cmd + stack`
     'stack_offset': Microcode([[CS.in_stack, CS.in_cmd, CS.out_acc]]),
     'stack_-offset': Microcode([[CS.in_cmd, CS.neg, CS.out_acc], [CS.in_stack, CS.in_acc, CS.out_acc]]),
-    
+
     'shift_stack': Microcode([[CS.in_stack, CS.in_cmd, CS.out_stack]]),
     'unshift_stack': Microcode([[CS.in_cmd, CS.neg, CS.out_acc], [CS.in_stack, CS.in_acc, CS.out_stack]]),
-  
+
     # `acc = (cmd + stack)`
     'local_ptr': Microcode([[CS.in_stack, CS.in_cmd, CS.out_acc]]),
     # `*(cmd + stack) = acc`
@@ -63,7 +63,7 @@ instructions = {
     'local_get_2': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.s_2, CS.in_mem, CS.out_acc]]),
     'local_set_1': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.s_1, CS.in_acc, CS.out_mem]]),
     'local_get_1': Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.s_1, CS.in_mem, CS.out_acc]]),
-    
+
     # `*(cmd) = acc`
     'global_set': Microcode([[CS.in_cmd, CS.out_ptr], [CS.in_acc, CS.out_mem]]),
     # `acc = *(cmd)`
@@ -92,11 +92,11 @@ instructions = {
 
     # math
     'add_cmd': Microcode([[CS.in_cmd, CS.in_acc, CS.out_acc]]),
-    'add_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.out_acc] ]),
-    'sub_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.sub, CS.out_acc] ]),
-    'mul_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.mul, CS.out_acc] ]),
-    'div_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.div, CS.out_acc] ]),
-    'rem_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.rem, CS.out_acc] ]),
+    'add_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.out_acc]]),
+    'sub_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.sub, CS.out_acc]]),
+    'mul_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.mul, CS.out_acc]]),
+    'div_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.div, CS.out_acc]]),
+    'rem_local': Microcode([[CS.in_cmd, CS.in_stack, CS.out_ptr], [CS.in_acc, CS.in_mem, CS.rem, CS.out_acc]]),
     'invert_bool': Microcode([[CS.in_acc, CS.invert_bool, CS.out_acc]]),
 }
 

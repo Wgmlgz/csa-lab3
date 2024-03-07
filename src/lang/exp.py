@@ -9,6 +9,8 @@ import re
 class Exp:
   begin: int
   end: int
+  def to_string(self) -> str:
+    return f'EmptyExp'
 
 class Nested(Exp):
   children: list[Exp] = []
@@ -23,9 +25,9 @@ class Nested(Exp):
   
 class IntLiteral(Exp):
   val: int
-  type: Optional[str]
+  type: str
   
-  def __init__(self, val: int, type: str = None) -> None:
+  def __init__(self, val: int, type: str) -> None:
     super().__init__()
     self.val  = val
     self.type = type
@@ -56,7 +58,7 @@ class ParseException(Exception):
   token: Token
   msg: str
   
-  def __init__(self, msg: str, pos = None, after = False, exp: Exp = None) -> None:
+  def __init__(self, msg: str, pos = None, after = False, exp: Optional[Exp] = None) -> None:
     super().__init__(msg, pos, after)
     self.msg = msg
     self.after = after
@@ -84,6 +86,7 @@ def parse_atom(tokens: list[Token], cursor: int) -> tuple:
         raise ParseException('Expected `)`', tokens[-1])
     token = tokens[cursor]
   
+    child: IdLiteral | IntLiteral | StrLiteral
     if token.type == TokenType.ID:
         child = IdLiteral(token.val)
     elif token.type == TokenType.INT:

@@ -48,7 +48,7 @@ class CS(enumerate):
     
 
 class Microcode:
-    cs: list[list[CS]]
+    cs: list[list[int]]
 
-    def __init__(self, cs: list[list[CS]]) -> None:
+    def __init__(self, cs: list[list[int]]) -> None:
         self.cs = cs

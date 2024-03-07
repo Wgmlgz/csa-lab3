@@ -13,7 +13,7 @@ from lang.scope import (
     Scope,
     ScopeEntry,
 )
-from lang.types import Callable, Ptr, Struct, Type, u64_type, void_type, str_type
+from lang.types import Callable, Ptr, Struct, Type, u64_type, void_type, str_type, undefined_type
 from utils import tab, config
 
 
@@ -45,8 +45,8 @@ def compile_instr(exp: Exp, scope: Scope) -> Entry:
             scope_entry = scope.get(arg.val, arg)
             instr.arg = scope_entry.obj
         elif isinstance(arg, IntLiteral) or isinstance(arg, StrLiteral):
-            arg = any_to_arg(arg.val)
-            instr.arg = Object(arg)
+            res = any_to_arg(arg.val)
+            instr.arg = Object(res)
         else:
             raise ParseException("Expected string or int literal ", exp)
 
@@ -153,7 +153,7 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
 
 
 def compile_if(
-    child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
+    child: Nested, parent: Scope, mod: lang.module.Module, ret: Optional[ScopeEntry] = None
 ) -> Block:
     block = Block(parent, ret)
     if len(child.children) != 4 or len(child.children) < 3:
@@ -195,7 +195,7 @@ def compile_if(
 
 
 def compile_while(
-    child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
+    child: Nested, parent: Scope, mod: lang.module.Module, ret: Optional[ScopeEntry] = None
 ) -> Block:
     block = Block(parent, ret)
 
@@ -227,10 +227,8 @@ def compile_while(
     return block
 
 def compile_get(
-    child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
+    action: str, child: Nested, parent: Scope, mod: lang.module.Module, ret: Optional[ScopeEntry] = None
 ) -> Block:
-    action = child.children[0].val
-    
     deref = False
     if action == '.':
         deref = True
@@ -281,7 +279,7 @@ def compile_get(
     return block
 
 def compile_let(
-    child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
+    child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
 ) -> Block:
     if len(child.children) != 3:
         raise ParseException(f"Expected 3 arguments e.g. `let x val`", child)
@@ -293,16 +291,17 @@ def compile_let(
     return body
 
 
-def compile_def(child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None):
+def compile_def(child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None) -> Block:
     if len(child.children) != 2:
         raise ParseException(f"Expected 2 arguments e.g. `def (x type)`", child)
     var_name, type = compile_typed(child.children[1], parent)
     entry = ScopeEntry(type)
     parent.add(var_name, entry, child.children[1])
+    return Block(parent)
 
 
 def compile_set(
-    child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
+    child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
 ) -> Block:
     if len(child.children) != 3:
         raise ParseException(f"Expected 2 arguments e.g. `set x val`", child)
@@ -341,7 +340,7 @@ def compile_typed(exp: Exp, scope: Scope) -> tuple[str, Type]:
 
 
 def compile_fn(
-    exp: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
+    exp: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
 ) -> Block:
     if len(exp.children) < 3:
         raise ParseException(
@@ -419,10 +418,9 @@ operators = binary_operators + unary_operators
 
 
 def compile_operator(
-    exp: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
+    op: str, exp: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
 ) -> Block:
     block = Block(parent, ret)
-    op = exp.children[0].val
     if op in binary_operators and len(exp.children) == 3:
         # if :
         #     raise ParseException(
@@ -483,27 +481,27 @@ def compile_operator(
     return block
 
 def compile_import(
-    exp: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
+    exp: Nested, mod: lang.module.Module
 ) -> Block:
     if len(exp.children) != 2 or not isinstance(exp.children[1], StrLiteral):
         raise ParseException('Invalid import statement e.g. `(import "./path/to/file")`')
     path = exp.children[1].val
     res = lang.module.Module(path, mod)
+    if res.block is None:
+        raise Exception('No block')
     return res.block
 
 
 # def compile_var()
 def compile_action(
-    child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
-) -> Block:
-    first_child = child.children[0]
-    id = first_child.val
+    id, child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
+) -> Entry:
     if id in instructions.keys():
         return compile_instr(child, parent)
     elif id == "let":
         return compile_let(child, parent, mod, ret)
     elif id == "def":
-        compile_def(child, parent, mod, ret)
+        return compile_def(child, parent, mod, ret)
     elif id == "set":
         return compile_set(child, parent, mod, ret)
     elif id == "if":
@@ -513,11 +511,11 @@ def compile_action(
     elif id == "fn":
         return compile_fn(child, parent, mod, ret)
     elif id == "." or id == '->':
-        return compile_get(child, parent, mod, ret)
+        return compile_get(id, child, parent, mod, ret)
     elif id in operators:
-        return compile_operator(child, parent, mod, ret)
+        return compile_operator(id, child, parent, mod, ret)
     elif id == "import":
-        return compile_import(child, parent, mod, ret)
+        return compile_import(child, mod)
     else:
         # compile_var(block, )
         # else:
@@ -595,12 +593,12 @@ def compile_action(
 
 
 def compile_block(
-    exp: Exp, parent: Scope, mod: lang.module.Module, ret: ScopeEntry = None
+    exp: Exp, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
 ) -> Block:
     block = Block(parent, ret)
     if isinstance(exp, Nested):
         if len(exp.children) > 0 and isinstance(exp.children[0], IdLiteral):
-            entry = compile_action(exp, parent, mod, block.ret)
+            entry = compile_action(exp.children[0].val, exp, parent, mod, block.ret)
             block.content.append(entry)
         else:
             for idx, child in enumerate(exp.children):
@@ -613,7 +611,7 @@ def compile_block(
                     and len(child.children) > 0
                     and isinstance(child.children[0], IdLiteral)
                 ):
-                    entry = compile_action(child, block.scope, mod, child_ret)
+                    entry = compile_action(child.children[0].val, child, block.scope, mod, child_ret)
                     block.content.append(entry)
                 else:
                     entry = compile_block(child, block.scope, mod, child_ret)
@@ -655,7 +653,7 @@ def compile_block(
         # compile_var(block, exp)
     else:
         raise ParseException("Expected block", exp=exp)
-    if block.ret.type is None:
+    if block.ret.type.id == undefined_type.id:
         block.ret.type = void_type
     return block
 
@@ -678,10 +676,10 @@ def compile_var(block: Block, exp: IdLiteral):
 
 
 def resolve_labels(
-    list: list[Instruction | Object | int], base: int, word_size: int
+    input: list[Instruction | Object | int], base: int, word_size: int
 ) -> tuple[list[Instruction | int], int]:
-    res = []
-    for entry in list:
+    res: list[Instruction | int] = []
+    for entry in input:
         if isinstance(entry, Instruction):
             res.append(entry)
             base += word_size

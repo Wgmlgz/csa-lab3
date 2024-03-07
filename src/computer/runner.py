@@ -14,9 +14,9 @@ class Runner:
         return int.from_bytes(self.m.cpu.ptr)
 
     def get_stream(self) -> Stream:
-        return self.m.descriptors.get(self.int_ptr())
+        return self.m.descriptors[self.int_ptr()]
 
-    def exec_tick(self, tick_cs: list[CS]):
+    def exec_tick(self, tick_cs: list[int]):
         
         if CS.halt in tick_cs:
             self.m.cpu.run = False
@@ -102,7 +102,7 @@ class Runner:
             if CS.out_ip in tick_cs:
                 self.m.cpu.ip = bytes_res
             if CS.out_io in tick_cs:
-                self.get_stream().write(chr(bytes_res[-1]))
+                self.get_stream().write(bytes_res[-1].to_bytes(1, signed=True))
             if CS.out_mem in tick_cs:
                 self.m.memory.set(self.int_ptr(), bytes_res)
             if CS.out_stack in tick_cs:
@@ -126,8 +126,8 @@ class Runner:
             # self.exec_instr(instructions['load_cmd'])
             
             tag = int.from_bytes(self.m.cpu.cmd[:4])
-            opcode = opcode_by_tag.get(tag)
-            instr = instructions.get(opcode)
+            opcode = opcode_by_tag[tag]
+            instr = instructions[opcode]
 
             if config['debug']:
                 print('exec...')

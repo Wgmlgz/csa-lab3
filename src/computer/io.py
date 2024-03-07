@@ -1,8 +1,8 @@
 class Stream:
-  data: str
+  data: bytes
   ptr: int
   
-  def __init__(self, data = '', real=False) -> None:
+  def __init__(self, data = bytes(), real=False) -> None:
     self.data = data
     self.ptr = 0
     
@@ -15,7 +15,7 @@ class Stream:
     self.ptr += len(data)
     
   def __str__(self) -> str:
-    s = self.data
+    s = str(self.data)
     s += '\n'
     s += ' ' * self.ptr + '^'
     return s
