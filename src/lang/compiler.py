@@ -1,4 +1,3 @@
-from pprint import pprint
 from typing import Optional
 from computer.instructions import any_to_arg, instructions
 from lang.exp import Exp, IdLiteral, IntLiteral, Nested, ParseException, StrLiteral
@@ -13,8 +12,16 @@ from lang.scope import (
     Scope,
     ScopeEntry,
 )
-from lang.types import Callable, Ptr, Struct, Type, u64_type, void_type, str_type, undefined_type
-from utils import tab, config
+from lang.type_info import (
+    Callable,
+    Ptr,
+    Struct,
+    Type,
+    int_type,
+    void_type,
+    str_type,
+    undefined_type,
+)
 
 
 class Executable:
@@ -22,9 +29,13 @@ class Executable:
         self.instructions = instructions
 
     def to_dict(self):
-        instructions = [(instr.to_list() if isinstance(instr, Instruction) else [instr]) for instr in self.instructions]
+        instructions = [
+            (instr.to_list() if isinstance(instr, Instruction) else [instr])
+            for instr in self.instructions
+        ]
         res = {"instructions": instructions}
         return res
+
 
 def compile_instr(exp: Exp, scope: Scope) -> Entry:
     if not isinstance(exp, Nested):
@@ -79,7 +90,7 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
             block.content.append(Instruction("deref"))
         else:
             block.content.append(Instruction("local_get", OffsetObject(a.obj, done)))
-            
+
         block.content.append(Instruction("local_set", OffsetObject(b.obj, done)))
         done += 8
 
@@ -90,7 +101,7 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
             block.content.append(Instruction("deref_4"))
         else:
             block.content.append(Instruction("local_get_4", OffsetObject(a.obj, done)))
-            
+
         block.content.append(Instruction("local_set_4", OffsetObject(b.obj, done)))
         done += 4
     for shift in range((size - done) // 2):
@@ -100,7 +111,7 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
             block.content.append(Instruction("deref_2"))
         else:
             block.content.append(Instruction("local_get_2", OffsetObject(a.obj, done)))
-            
+
         block.content.append(Instruction("local_set_2", OffsetObject(b.obj, done)))
         done += 2
     for shift in range((size - done) // 1):
@@ -110,7 +121,7 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
             block.content.append(Instruction("deref_1"))
         else:
             block.content.append(Instruction("local_get_1", OffsetObject(a.obj, done)))
-            
+
         block.content.append(Instruction("local_set_1", OffsetObject(b.obj, done)))
         done += 1
 
@@ -153,7 +164,10 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
 
 
 def compile_if(
-    child: Nested, parent: Scope, mod: lang.module.Module, ret: Optional[ScopeEntry] = None
+    child: Nested,
+    parent: Scope,
+    mod: lang.module.Module,
+    ret: Optional[ScopeEntry] = None,
 ) -> Block:
     block = Block(parent, ret)
     if len(child.children) != 4 or len(child.children) < 3:
@@ -169,13 +183,13 @@ def compile_if(
         f = Block(parent)
         f.ret.type = void_type
 
-    if cond.ret.type.id != "u64":
+    if cond.ret.type.id != "int":
         raise ParseException(
-            f"return type of `if` condition bust be `u64`", child.children[1]
+            "return type of `if` condition bust be `int`", child.children[1]
         )
 
     if t.ret.type.id != f.ret.type.id:
-        raise ParseException(f"if types must match", child)
+        raise ParseException("if types must match", child)
 
     block.ret.type = t.ret.type
 
@@ -195,7 +209,10 @@ def compile_if(
 
 
 def compile_while(
-    child: Nested, parent: Scope, mod: lang.module.Module, ret: Optional[ScopeEntry] = None
+    child: Nested,
+    parent: Scope,
+    mod: lang.module.Module,
+    ret: Optional[ScopeEntry] = None,
 ) -> Block:
     block = Block(parent, ret)
 
@@ -207,9 +224,9 @@ def compile_while(
     cond = compile_block(child.children[1], parent, mod)
     body = compile_block(child.children[2], parent, mod, ret)
 
-    if cond.ret.type.id != "u64":
+    if cond.ret.type.id != "int":
         raise ParseException(
-            f"return type of `while` condition bust be `u64`", child.children[1]
+            "return type of `while` condition bust be `int`", child.children[1]
         )
 
     block.ret.type = body.ret.type
@@ -226,13 +243,18 @@ def compile_while(
     block.content.append(label_end)
     return block
 
+
 def compile_get(
-    action: str, child: Nested, parent: Scope, mod: lang.module.Module, ret: Optional[ScopeEntry] = None
+    action: str,
+    child: Nested,
+    parent: Scope,
+    mod: lang.module.Module,
+    ret: Optional[ScopeEntry] = None,
 ) -> Block:
     deref = False
-    if action == '.':
+    if action == ".":
         deref = True
-        
+
     block = Block(parent, ret)
 
     if len(child.children) != 3:
@@ -248,52 +270,55 @@ def compile_get(
     struct = ptr.ret.type.base
     if not isinstance(child.children[2], IdLiteral):
         raise ParseException(
-            f"Expected id",
+            "Expected id",
             child.children[2],
         )
-    
+
     id = child.children[2].val
-    if not id in struct.offsets:
+    if id not in struct.offsets:
         raise ParseException(
             f"Unknown member `{id}` of struct `{struct.name}`",
             child.children[2],
         )
     offset = struct.offsets[id]
     block.content.append(ptr)
-    
+
     if deref:
         block.ret.type = struct.members[id]
         dereferenced = ScopeEntry(Ptr(struct.members[id]))
-        block.scope.add('__dereferenced', dereferenced, child)
-        block.content.append(Instruction('local_get', ptr.ret.obj))
-        block.content.append(Instruction('add_cmd', Object(offset)))
-        block.content.append(Instruction('local_set', dereferenced.obj))
-        
-        insert_copy(block, dereferenced, block.ret, child, deref=True)        
+        block.scope.add("__dereferenced", dereferenced, child)
+        block.content.append(Instruction("local_get", ptr.ret.obj))
+        block.content.append(Instruction("add_cmd", Object(offset)))
+        block.content.append(Instruction("local_set", dereferenced.obj))
+
+        insert_copy(block, dereferenced, block.ret, child, deref=True)
     else:
         block.ret.type = Ptr(struct.members[id])
-        block.content.append(Instruction('local_get', ptr.ret.obj))
-        block.content.append(Instruction('add_cmd', Object(offset)))
-        block.content.append(Instruction('local_set', block.ret.obj))
-    
+        block.content.append(Instruction("local_get", ptr.ret.obj))
+        block.content.append(Instruction("add_cmd", Object(offset)))
+        block.content.append(Instruction("local_set", block.ret.obj))
+
     return block
+
 
 def compile_let(
     child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
 ) -> Block:
     if len(child.children) != 3:
-        raise ParseException(f"Expected 3 arguments e.g. `let x val`", child)
+        raise ParseException("Expected 3 arguments e.g. `let x val`", child)
     if not isinstance(child.children[1], IdLiteral):
-        raise ParseException(f"Expected identifier e.g. `let x val`", child.children[1])
+        raise ParseException("Expected identifier e.g. `let x val`", child.children[1])
     var_name = child.children[1].val
     body = compile_block(child.children[2], parent, mod, ret)
     parent.add(var_name, body.ret, child.children[1])
     return body
 
 
-def compile_def(child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None) -> Block:
+def compile_def(
+    child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
+) -> Block:
     if len(child.children) != 2:
-        raise ParseException(f"Expected 2 arguments e.g. `def (x type)`", child)
+        raise ParseException("Expected 2 arguments e.g. `def (x type)`", child)
     var_name, type = compile_typed(child.children[1], parent)
     entry = ScopeEntry(type)
     parent.add(var_name, entry, child.children[1])
@@ -304,9 +329,9 @@ def compile_set(
     child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
 ) -> Block:
     if len(child.children) != 3:
-        raise ParseException(f"Expected 2 arguments e.g. `set x val`", child)
+        raise ParseException("Expected 2 arguments e.g. `set x val`", child)
     if not isinstance(child.children[1], IdLiteral):
-        raise ParseException(f"Expected identifier e.g. `set x val`", child.children[1])
+        raise ParseException("Expected identifier e.g. `set x val`", child.children[1])
     var_name = child.children[1].val
     var = parent.get(var_name, child.children[1])
     body = compile_block(child.children[2], parent, mod, var)
@@ -320,7 +345,7 @@ def compile_type(exp: Exp, scope: Scope) -> tuple[str, Type]:
         and isinstance(exp.children[0], IdLiteral)
         and isinstance(exp.children[1], IdLiteral)
     ):
-        raise ParseException(f"Invalid typed declaration, expected `(name type)`", exp)
+        raise ParseException("Invalid typed declaration, expected `(name type)`", exp)
     name = exp.children[0].val
     type = scope.get_type(exp.children[1].val, exp.children[1])
     return name, type
@@ -333,7 +358,7 @@ def compile_typed(exp: Exp, scope: Scope) -> tuple[str, Type]:
         and isinstance(exp.children[0], IdLiteral)
         and isinstance(exp.children[1], IdLiteral)
     ):
-        raise ParseException(f"Invalid typed declaration, expected `(name type)`", exp)
+        raise ParseException("Invalid typed declaration, expected `(name type)`", exp)
     name = exp.children[0].val
     type = scope.get_type(exp.children[1].val, exp.children[1])
     return name, type
@@ -350,7 +375,7 @@ def compile_fn(
 
     if not isinstance(exp.children[1], IdLiteral):
         raise ParseException(
-            f"Expected function name e.g. `fn name ((arg1 type1)...) (body)``",
+            "Expected function name e.g. `fn name ((arg1 type1)...) (body)``",
             exp.children[1],
         )
     fn_name = exp.children[1].val
@@ -369,7 +394,7 @@ def compile_fn(
 
     block = Block(parent)
     block.ret.type = ret_type
-    ret_entry = ScopeEntry(u64_type)
+    ret_entry = ScopeEntry(int_type)
     block.scope.add("ret_addr", ret_entry, exp)
 
     for child in args_def:
@@ -402,9 +427,9 @@ def compile_fn(
     block.resolve_offsets(0)
 
     ret_block = Block(parent)
-    ret_block.ret.type = fn_type
-    ret_block.content.append(Instruction("load", fn_label.obj))
-    ret_block.content.append(Instruction("local_set", ret_block.ret.obj))
+    ret_block.ret.type = void_type
+    # ret_block.content.append(Instruction("load", fn_label.obj))
+    # ret_block.content.append(Instruction("local_set", ret_block.ret.obj))
 
     ret_block.global_entries.append(fn_label.obj)
     ret_block.global_entries.append(block)
@@ -412,35 +437,39 @@ def compile_fn(
     return ret_block
 
 
-binary_operators = ["+", "-", "*", "/", "%", "=", "!=", "<=", ">="]
+binary_operators = ["+", "-", "*", "/", "%", "=", "!=", "<=", ">=", "<"]
 unary_operators = ["*"]
 operators = binary_operators + unary_operators
 
 
 def compile_operator(
-    op: str, exp: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
+    op: str,
+    exp: Nested,
+    parent: Scope,
+    mod: lang.module.Module,
+    ret: ScopeEntry | None = None,
 ) -> Block:
     block = Block(parent, ret)
     if op in binary_operators and len(exp.children) == 3:
         # if :
         #     raise ParseException(
         #         f'Expected 2 arguments `({op} a b)`, found({len(exp.children)})', exp)
-        ptr = ScopeEntry(u64_type)
-        b_ret = ScopeEntry(u64_type)
+        ptr = ScopeEntry(int_type)
+        b_ret = ScopeEntry(int_type)
         block.scope.add("__arg_a", ptr, exp)
         block.scope.add("__arg_b", b_ret, exp)
         a = compile_block(exp.children[1], block.scope, mod, ptr)
         b = compile_block(exp.children[2], block.scope, mod, b_ret)
 
-        # only u64 operations for now
-        if not (isinstance(a.ret.type, Ptr) or a.ret.type.id == u64_type.id):
-            raise ParseException(f"Expected 64 bit int type", exp.children[1])
-        if not (isinstance(b.ret.type, Ptr) or b.ret.type.id == u64_type.id):
-            raise ParseException(f"Expected 64 bit int type", exp.children[2])
+        # only int operations for now
+        if not (isinstance(a.ret.type, Ptr) or a.ret.type.id == int_type.id):
+            raise ParseException("Expected 64 bit int type", exp.children[1])
+        if not (isinstance(b.ret.type, Ptr) or b.ret.type.id == int_type.id):
+            raise ParseException("Expected 64 bit int type", exp.children[2])
 
         # if a.ret.type != b.ret.type:
         #     raise ParseException(f"types, don' match", exp.children[0])
-        # if b.ret.type != u64_type:
+        # if b.ret.type != int_type:
 
         block.content.append(a)
         block.content.append(b)
@@ -460,18 +489,23 @@ def compile_operator(
             block.content.append(Instruction("invert_bool"))
         elif op == "!=":
             block.content.append(Instruction("sub_local", b.ret.obj))
+        elif op == "<":
+            block.content.append(Instruction("sub_local", b.ret.obj))
+            block.content.append(Instruction("is_neg"))
         else:
             raise ParseException(f"Unhandled operator ({op})`", exp)
         block.content.append(Instruction("local_set", block.ret.obj))
         block.ret.type = a.ret.type
     elif op in unary_operators and len(exp.children) == 2:
         if op == "*":
-            # ptr = ScopeEntry(u64_type)
+            # ptr = ScopeEntry(int_type)
             # block.scope.add("ptr", ptr, exp)
             a = compile_block(exp.children[1], block.scope, mod)
             block.content.append(a)
             if not isinstance(a.ret.type, Ptr):
-                raise ParseException(f"Expected pointer, but found `{a.ret.type.id}`", exp.children[1])
+                raise ParseException(
+                    f"Expected pointer, but found `{a.ret.type.id}`", exp.children[1]
+                )
             block.ret.type = a.ret.type.base
             insert_copy(block, a.ret, block.ret, exp, deref=True)
         else:
@@ -480,21 +514,26 @@ def compile_operator(
         raise ParseException(f"Unhandled operator `{op}`", exp)
     return block
 
-def compile_import(
-    exp: Nested, mod: lang.module.Module
-) -> Block:
+
+def compile_import(exp: Nested, mod: lang.module.Module) -> Block:
     if len(exp.children) != 2 or not isinstance(exp.children[1], StrLiteral):
-        raise ParseException('Invalid import statement e.g. `(import "./path/to/file")`')
+        raise ParseException(
+            'Invalid import statement e.g. `(import "./path/to/file")`'
+        )
     path = exp.children[1].val
     res = lang.module.Module(path, mod)
     if res.block is None:
-        raise Exception('No block')
+        raise Exception("No block")
     return res.block
 
 
 # def compile_var()
 def compile_action(
-    id, child: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
+    id,
+    child: Nested,
+    parent: Scope,
+    mod: lang.module.Module,
+    ret: ScopeEntry | None = None,
 ) -> Entry:
     if id in instructions.keys():
         return compile_instr(child, parent)
@@ -510,7 +549,7 @@ def compile_action(
         return compile_while(child, parent, mod, ret)
     elif id == "fn":
         return compile_fn(child, parent, mod, ret)
-    elif id == "." or id == '->':
+    elif id == "." or id == "->":
         return compile_get(id, child, parent, mod, ret)
     elif id in operators:
         return compile_operator(id, child, parent, mod, ret)
@@ -548,7 +587,7 @@ def compile_action(
 
             block = Block(parent)
             block.ret.type = var.type.ret
-            ret_addr_var = ScopeEntry(u64_type)
+            ret_addr_var = ScopeEntry(int_type)
             ret_addr_label = Object()
 
             block.scope.add("ret_addr", ret_addr_var, child)
@@ -611,7 +650,9 @@ def compile_block(
                     and len(child.children) > 0
                     and isinstance(child.children[0], IdLiteral)
                 ):
-                    entry = compile_action(child.children[0].val, child, block.scope, mod, child_ret)
+                    entry = compile_action(
+                        child.children[0].val, child, block.scope, mod, child_ret
+                    )
                     block.content.append(entry)
                 else:
                     entry = compile_block(child, block.scope, mod, child_ret)
@@ -634,22 +675,22 @@ def compile_block(
             block.content.append(Instruction("local_set_2", block.ret.obj))
         elif type.size == 1:
             block.content.append(Instruction("local_set_1", block.ret.obj))
-            
+
     elif isinstance(exp, IdLiteral):
         compile_var(block, exp)
-        
+
     elif isinstance(exp, StrLiteral):
         block.ret.type = str_type
         begin_ptr = Object()
         block.global_entries.append(begin_ptr)
         bytes_str = str.encode(exp.val)
         block.global_entries.append(Constants(bytes_str))
-        
-        block.content.append(Instruction('load', begin_ptr))
-        block.content.append(Instruction('local_set', block.ret.obj))
-        
-        block.content.append(Instruction('load', Object(len(bytes_str).to_bytes(4))))
-        block.content.append(Instruction('local_set', OffsetObject(block.ret.obj, 8)))
+
+        block.content.append(Instruction("load", begin_ptr))
+        block.content.append(Instruction("local_set", block.ret.obj))
+
+        block.content.append(Instruction("load", Object(len(bytes_str).to_bytes(4))))
+        block.content.append(Instruction("local_set", OffsetObject(block.ret.obj, 8)))
         # compile_var(block, exp)
     else:
         raise ParseException("Expected block", exp=exp)

@@ -1,6 +1,6 @@
 from typing import Optional
 from lang.exp import Exp, ParseException
-from lang.types import Type, undefined_type
+from lang.type_info import Type, undefined_type
 from utils import tab
 
 
@@ -29,8 +29,7 @@ class Scope:
 
     def add(self, id: str, scope_entry: ScopeEntry, exp: Exp):
         if id in self.locals:
-            raise ParseException(
-                f"Variable {id} is already defined in this scope", exp)
+            raise ParseException(f"Variable {id} is already defined in this scope", exp)
         self.locals[id] = scope_entry
 
     def get(self, id: str, exp: Exp) -> ScopeEntry:
@@ -43,8 +42,7 @@ class Scope:
 
     def add_type(self, id: str, type_entry: Type, exp: Optional[Exp]):
         if id in self.types:
-            raise ParseException(
-                f"Type {id} is already defined in this scope", exp)
+            raise ParseException(f"Type {id} is already defined in this scope", exp)
         self.types[id] = type_entry
 
     def get_type(self, id: str, exp: Exp) -> Type:
@@ -64,8 +62,7 @@ class Scope:
                 f"{key}: {val.type} at {val.obj}" for key, val in self.locals.items()
             )
         if len(self.types) != 0:
-            s += "\n  T: ".join(f"{key}: {str(val)}" for key,
-                                val in self.types.items())
+            s += "\n  T: ".join(f"{key}: {str(val)}" for key, val in self.types.items())
         return s
 
     def resolve_offsets(self, base: int):
@@ -239,7 +236,9 @@ class Block:
                 entry.resolve_offsets(base)
         return after_ret
 
-    def flatten(self) -> tuple[list[Instruction | Object | int], list[Instruction | Object | int]]:
+    def flatten(
+        self,
+    ) -> tuple[list[Instruction | Object | int], list[Instruction | Object | int]]:
         local: list[Instruction | Object | int] = []
         glob: list[Instruction | Object | int] = []
         after_global: list[Instruction | Object | int] = []

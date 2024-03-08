@@ -14,7 +14,7 @@ class Struct(Type):
     members: dict[str, Type]
     name: str
     offsets: dict[str, int]
-    
+
     def __init__(self, name: str, members: dict[str, Type]) -> None:
         self.name = name
         self.members = members
@@ -25,9 +25,9 @@ class Struct(Type):
             offsets[key] = base
             base += member.size
         size = base
-                    
+
         self.offsets = offsets
-        
+
         args = " ".join(f"({key} {val.id})" for key, val in members.items())
         id = f"{name}({args})"
 
@@ -59,5 +59,5 @@ class Callable(Type):
 undefined_type = Type("undefined", 666)
 void_type = Type("()", 0)
 u8_type = Type("u8", 1)
-u64_type = Type("u64", 8)
-str_type = Struct("str", {"ptr": Ptr(u8_type), "len": u64_type})
+int_type = Type("int", 8)
+str_type = Struct("str", {"ptr": Ptr(u8_type), "len": int_type})
