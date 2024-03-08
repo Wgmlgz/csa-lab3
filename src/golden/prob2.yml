@@ -1,0 +1,185 @@
+in_source: |-
+  (fn print_n (n int)
+    ((let cur 100000000)
+    (let base 10)
+    (let zero 48)
+    (if (= n 0)
+      ((load 0) (out 1))
+      ((while (= 0 (% (/ n cur) base)) (
+        (set cur (/ cur base)) ))
+      (while cur (
+        (let t (+ (% (/ n cur) base) zero))
+        (out 1)
+        (set cur (/ cur base))))))
+    ()))
+
+  (let upper_bound 4000000)
+  (let a 1)
+  (let b 2)
+  (let sum 0)
+
+  (while (< b upper_bound) (
+    (if (% b 2) (0) (set sum (+ sum b)))
+    (let t b)
+    (set b (+ a b))
+    (set a t)))
+
+  (print_n sum)
+in_stdin: ''
+out_log: ''
+out_stdout: |-
+  ============================================================
+  4613732
+out_code: |-
+  {
+    "instructions": [
+      ["load", 4000000],
+      ["local_set", -8],
+      ["load", 1],
+      ["local_set", -16],
+      ["load", 2],
+      ["local_set", -24],
+      ["load", 0],
+      ["local_set", -32],
+      ["local_get", -24],
+      ["local_set", -56],
+      ["local_get", -8],
+      ["local_set", -64],
+      ["local_get", -56],
+      ["sub_local", -64],
+      ["is_neg"],
+      ["local_set", -48],
+      ["local_get", -48],
+      ["jmp_if_false", 440],
+      ["local_get", -24],
+      ["local_set", -80],
+      ["load", 2],
+      ["local_set", -88],
+      ["local_get", -80],
+      ["rem_local", -88],
+      ["local_set", -72],
+      ["local_get", -72],
+      ["jmp_if_false", 240],
+      ["load", 0],
+      ["local_set", -64],
+      ["jmp", 312],
+      ["local_get", -32],
+      ["local_set", -72],
+      ["local_get", -24],
+      ["local_set", -80],
+      ["local_get", -72],
+      ["add_local", -80],
+      ["local_set", -32],
+      ["local_get", -32],
+      ["local_set", -64],
+      ["local_get", -24],
+      ["local_set", -56],
+      ["local_get", -16],
+      ["local_set", -64],
+      ["local_get", -24],
+      ["local_set", -72],
+      ["local_get", -64],
+      ["add_local", -72],
+      ["local_set", -24],
+      ["local_get", -56],
+      ["local_set", -16],
+      ["local_get", -16],
+      ["local_set", -48],
+      ["local_get", -48],
+      ["local_set", -40],
+      ["jmp", 64],
+      ["load", 488],
+      ["local_set", -40],
+      ["local_get", -32],
+      ["local_set", -48],
+      ["shift_stack", -32],
+      ["jmp", 504],
+      ["unshift_stack", -32],
+      ["halt"],
+      ["load", 100000000],
+      ["local_set", -24],
+      ["load", 10],
+      ["local_set", -32],
+      ["load", 48],
+      ["local_set", -40],
+      ["local_get", -16],
+      ["local_set", -64],
+      ["load", 0],
+      ["local_set", -72],
+      ["local_get", -64],
+      ["sub_local", -72],
+      ["invert_bool"],
+      ["local_set", -56],
+      ["local_get", -56],
+      ["jmp_if_false", 656],
+      ["load", 0],
+      ["out", 1],
+      ["jmp", 1168],
+      ["load", 0],
+      ["local_set", -72],
+      ["local_get", -16],
+      ["local_set", -104],
+      ["local_get", -24],
+      ["local_set", -112],
+      ["local_get", -104],
+      ["div_local", -112],
+      ["local_set", -88],
+      ["local_get", -32],
+      ["local_set", -96],
+      ["local_get", -88],
+      ["rem_local", -96],
+      ["local_set", -80],
+      ["local_get", -72],
+      ["sub_local", -80],
+      ["invert_bool"],
+      ["local_set", -64],
+      ["local_get", -64],
+      ["jmp_if_false", 912],
+      ["local_get", -24],
+      ["local_set", -72],
+      ["local_get", -32],
+      ["local_set", -80],
+      ["local_get", -72],
+      ["div_local", -80],
+      ["local_set", -24],
+      ["local_get", -24],
+      ["local_set", -64],
+      ["local_get", -64],
+      ["local_set", -56],
+      ["jmp", 656],
+      ["local_get", -24],
+      ["local_set", -56],
+      ["local_get", -56],
+      ["jmp_if_false", 1168],
+      ["local_get", -16],
+      ["local_set", -96],
+      ["local_get", -24],
+      ["local_set", -104],
+      ["local_get", -96],
+      ["div_local", -104],
+      ["local_set", -80],
+      ["local_get", -32],
+      ["local_set", -88],
+      ["local_get", -80],
+      ["rem_local", -88],
+      ["local_set", -64],
+      ["local_get", -40],
+      ["local_set", -72],
+      ["local_get", -64],
+      ["add_local", -72],
+      ["local_set", -56],
+      ["out", 1],
+      ["local_get", -24],
+      ["local_set", -64],
+      ["local_get", -32],
+      ["local_set", -72],
+      ["local_get", -64],
+      ["div_local", -72],
+      ["local_set", -24],
+      ["local_get", -24],
+      ["local_set", -48],
+      ["jmp", 912],
+      ["local_get", -8],
+      ["jmp_acc"]
+    ]
+  }

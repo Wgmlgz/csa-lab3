@@ -1,0 +1,42 @@
+in_source: |-
+  (fn status int (
+    (def (ready int))
+    (io_status 0)
+    (local_set ready)
+    ready
+  ))
+
+  (while (status) (
+    (in 0)
+    (out 1)
+  ))
+in_stdin: |-
+  aaa
+out_log: |
+out_stdout: |-
+  ============================================================
+  aaa
+out_code: |-
+  {
+    "instructions": [
+      ["load", 32],
+      ["local_set", -24],
+      ["shift_stack", -8],
+      ["jmp", 104],
+      ["unshift_stack", -8],
+      ["local_get", -16],
+      ["local_set", -8],
+      ["local_get", -8],
+      ["jmp_if_false", 96],
+      ["in", 0],
+      ["out", 1],
+      ["jmp", 0],
+      ["halt"],
+      ["io_status", 0],
+      ["local_set", -24],
+      ["local_get", -24],
+      ["local_set", -8],
+      ["local_get", -16],
+      ["jmp_acc"]
+    ]
+  }

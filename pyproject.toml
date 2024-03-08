@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "csa-lab3"
+version = "0.1.0"
+description = ""
+authors = ["Wgmlgz <62064707+Wgmlgz@users.noreply.github.com>"]
+readme = "README.md"
+package-mode = false 
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pytest = "^8.0.2"
+pytest-golden = "^0.2.2"
+mypy = "^1.9.0"
+ruff = "^0.3.1"
+coverage = "^7.4.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
