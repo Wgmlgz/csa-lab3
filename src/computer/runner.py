@@ -4,8 +4,10 @@ from computer.microcode import CS, Microcode
 from computer.instructions import opcode_by_tag, instructions
 from utils import config
 from time import sleep
+import os
 
-
+def cls():
+    os.system('cls' if os.name=='nt' else 'clear')
 class Runner:
     def __init__(self, m: Machine) -> None:
         self.m = m
@@ -110,6 +112,7 @@ class Runner:
 
     def exec_instr(self, instr: Microcode):
         for tick_cs in instr.cs:
+            self.m.clock.wait_cycles(1)
             self.exec_tick(tick_cs)
             if config['interactive']:
                 print(self.m)
@@ -120,6 +123,10 @@ class Runner:
     def run(self) -> None:
         self.m.cpu.run = True
         while self.m.cpu.run:
+            if config['clear']:
+                # Now, to clear the screen
+                cls()
+            
             if config['debug']:
                 print('instruction fetch...')
             self.m.cpu.cmd = self.m.memory.get(int.from_bytes(self.m.cpu.ip, signed=True), 8)

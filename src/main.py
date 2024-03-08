@@ -24,6 +24,10 @@ def main():
     config['compile'] = True
   if ('-i' in sys.argv) or ('--interactive' in sys.argv):
     config['interactive'] = True
+  if ('-m' in sys.argv) or ('--memory' in sys.argv):
+    config['debug-mem'] = True
+  if '--clear' in sys.argv:
+    config['clear'] = True
   
   if config['debug']:
     print('argument list', sys.argv)
@@ -39,7 +43,7 @@ def main():
       mod.link()
       executable = mod.exe
       dict = executable.to_dict()
-      machine.memory.load_instructions(dict['instructions'], machine.word_size)
+      machine.memory.memory.load_instructions(dict['instructions'], machine.word_size)
       
     elif config['run']:
       machine.memory.load_json(file_path)

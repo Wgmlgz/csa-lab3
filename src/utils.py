@@ -1,8 +1,10 @@
 config = {
     'debug': False,
+    'debug-mem': False,
     'compile': False,
     'run': False,
-    'interactive': False
+    'interactive': False,
+    'clear': False
 }
 
 
