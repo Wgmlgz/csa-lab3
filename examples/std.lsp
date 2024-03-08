@@ -1,5 +1,5 @@
 
-(fn print_byte (n u64) ((local_get n) (out 1)))
+(fn print_byte (n int) ((local_get n) (out 1)))
 
 (fn print_str (s str)
   ((let i 0)
@@ -17,7 +17,7 @@
   (nl)))
 
 
-(fn print_n (n u64)
+(fn print_n (n int)
   ((let cur 100000000)
   (let base 10)
   (let zero 48)
@@ -30,10 +30,10 @@
         (set cur (/ cur base)) ))))
   (nl)))
 
-(fn factorial (n u64) u64  
+(fn factorial (n int) int  
   (if (= n 0) 1 (* n (factorial (- n 1)))))
 
-(fn fib (n u64) u64  
+(fn fib (n int) int  
   (if (= n 0)
     0
     (if (= n 1)
