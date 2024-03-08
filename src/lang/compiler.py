@@ -403,7 +403,7 @@ def compile_fn(
 
     ret_block = Block(parent)
     ret_block.ret.type = fn_type
-    ret_block.content.append(Instruction("cmd->acc", fn_label.obj))
+    ret_block.content.append(Instruction("load", fn_label.obj))
     ret_block.content.append(Instruction("local_set", ret_block.ret.obj))
 
     ret_block.global_entries.append(fn_label.obj)
@@ -553,7 +553,7 @@ def compile_action(
 
             block.scope.add("ret_addr", ret_addr_var, child)
 
-            block.content.append(Instruction("cmd->acc", ret_addr_label))
+            block.content.append(Instruction("load", ret_addr_label))
             block.content.append(Instruction("local_set", ret_addr_var.obj))
 
             if len(child.children[1:]) != len(var.type.args):
@@ -625,7 +625,7 @@ def compile_block(
         type = parent.get_type(exp.type, exp)
         block.ret.type = type
 
-        block.content.append(Instruction("cmd->acc", Object(exp.val.to_bytes(4))))
+        block.content.append(Instruction("load", Object(exp.val.to_bytes(4))))
         if type.size == 8:
             block.content.append(Instruction("local_set", block.ret.obj))
         elif type.size == 4:
@@ -645,10 +645,10 @@ def compile_block(
         bytes_str = str.encode(exp.val)
         block.global_entries.append(Constants(bytes_str))
         
-        block.content.append(Instruction('cmd->acc', begin_ptr))
+        block.content.append(Instruction('load', begin_ptr))
         block.content.append(Instruction('local_set', block.ret.obj))
         
-        block.content.append(Instruction('cmd->acc', Object(len(bytes_str).to_bytes(4))))
+        block.content.append(Instruction('load', Object(len(bytes_str).to_bytes(4))))
         block.content.append(Instruction('local_set', OffsetObject(block.ret.obj, 8)))
         # compile_var(block, exp)
     else:

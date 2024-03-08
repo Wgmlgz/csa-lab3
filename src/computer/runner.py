@@ -46,6 +46,8 @@ class Runner:
             input_list.append(self.m.cpu.ip)
         if CS.in_io in tick_cs:
             input_list.append(self.get_stream().read(op_size))
+        if CS.in_io_status in tick_cs:
+            input_list.append(self.get_stream().status())
         if CS.in_mem in tick_cs:
             input_list.append(self.m.memory.get(self.int_ptr(), op_size))
         if CS.in_stack in tick_cs:

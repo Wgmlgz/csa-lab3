@@ -3,7 +3,7 @@ from computer.microcode import Microcode, CS
 
 def any_to_arg(arg: int | str = 0) -> bytes:
     if isinstance(arg, int):
-        res = arg.to_bytes(4)
+        res = arg.to_bytes(4, signed=True)
     elif isinstance(arg, str):
         if len(arg) < 4:
             t = (4 - len(arg)) * '\0' + arg
@@ -30,7 +30,7 @@ instructions = {
     # 'read': Microcode([[CS.in_io, CS.out_acc]]),
     # 'write': Microcode([[CS.in_acc, CS.out_io]]),
 
-    'cmd->acc': Microcode([[CS.in_cmd, CS.out_acc]]),
+    'load': Microcode([[CS.in_cmd, CS.out_acc]]),
     # 'cmd->ptr': Microcode([[CS.in_cmd, CS.out_ptr]]),
     # 'jump': Microcode([[CS.in_cmd, CS.dec, CS.out_ip]]),
 
@@ -83,6 +83,8 @@ instructions = {
 
     # io[cmd] += acc & 0xff
     'out': Microcode([[CS.in_cmd, CS.out_ptr], [CS.in_acc, CS.out_io]]),
+    'in': Microcode([[CS.in_cmd, CS.out_ptr], [CS.in_io, CS.out_acc]]),
+    'io_status': Microcode([[CS.in_cmd, CS.out_ptr], [CS.in_io_status, CS.out_acc]]),
 
     # jump
     'jmp_acc': Microcode([[CS.in_acc, CS.dec_8, CS.out_ip]]),

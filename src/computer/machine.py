@@ -37,7 +37,7 @@ class Machine:
         self.clock = Clock(1 * 1000 * 1000 * 1)
         self.memory = IntegratedMemorySystem(self.clock, mem_size, 64 * 8, 64)
         self.cpu = CPU(stack, main_ptr=0x0, reg_size=word_size)
-        self.stdin = Stream('amogus test')
+        self.stdin = Stream()
         self.stdout = Stream()
         self.word_size = word_size
 

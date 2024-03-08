@@ -11,6 +11,7 @@ class CS(enumerate):
     in_cmd = auto()
     in_ip = auto()
     in_io = auto()
+    in_io_status = auto()
     in_mem = auto()
     in_stack = auto()
 

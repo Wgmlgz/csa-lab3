@@ -158,7 +158,7 @@ class Instruction:
     def to_list(self):
         res = [self.id]
         if self.arg is not None and self.arg.get() is not None:
-            res.append(int.from_bytes(self.arg.get()))
+            res.append(int.from_bytes(self.arg.get(), signed=True))
         return res
 
 
