@@ -1,5 +1,5 @@
-
 from enum import auto
+
 
 class CS(enumerate):
     halt = auto()
@@ -32,21 +32,21 @@ class CS(enumerate):
     add = auto()
     sub = auto()
     mul = auto()
+    is_neg = auto()
     invert = auto()
     invert_bool = auto()
     neg = auto()
-    
+
     if_out = auto()
-    
+
     div = auto()
     rem = auto()
-    
-    
+
     s_8 = auto()
     s_4 = auto()
     s_2 = auto()
     s_1 = auto()
-    
+
 
 class Microcode:
     cs: list[list[int]]

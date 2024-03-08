@@ -1,13 +1,16 @@
 from computer.io import Stream
-from computer.machine import Machine
+from computer.computer import Machine
 from computer.microcode import CS, Microcode
 from computer.instructions import opcode_by_tag, instructions
 from utils import config
-from time import sleep
+import logging
 import os
 
+
 def cls():
-    os.system('cls' if os.name=='nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
+
+
 class Runner:
     def __init__(self, m: Machine) -> None:
         self.m = m
@@ -19,12 +22,10 @@ class Runner:
         return self.m.descriptors[self.int_ptr()]
 
     def exec_tick(self, tick_cs: list[int]):
-        
         if CS.halt in tick_cs:
             self.m.cpu.run = False
             return
-        
-        
+
         op_size = self.m.word_size
         if CS.s_8 in tick_cs:
             op_size = 8
@@ -34,7 +35,7 @@ class Runner:
             op_size = 4
         if CS.s_1 in tick_cs:
             op_size = 1
-            
+
         input_list: list[bytes] = []
         if CS.in_acc in tick_cs:
             input_list.append(self.m.cpu.acc)
@@ -55,19 +56,20 @@ class Runner:
 
         input_list = [i[-op_size:] for i in input_list]
         int_list = [int.from_bytes(i, signed=True) for i in input_list]
-        
+
         if (
-            CS.div in tick_cs or
-            CS.rem in tick_cs or
-            CS.sub in tick_cs or
-            CS.mul in tick_cs
+            CS.div in tick_cs
+            or CS.rem in tick_cs
+            or CS.sub in tick_cs
+            or CS.mul in tick_cs
         ):
             if int_list[1] == 0:
                 pass
-            
+
             if len(int_list) != 2:
                 raise RuntimeError(
-                    'you have destroyed and betrayed yourself for nothing')
+                    "you have destroyed and betrayed yourself for nothing"
+                )
             if CS.div in tick_cs:
                 res = int_list[0] // int_list[1]
             if CS.rem in tick_cs:
@@ -79,7 +81,7 @@ class Runner:
         else:
             res = 0
             res = sum(int_list)
-            # if CS.add_u64 in tick_cs:
+            # if CS.add_int in tick_cs:
             if CS.inc in tick_cs:
                 res += 1
             if CS.inc_8 in tick_cs:
@@ -94,8 +96,12 @@ class Runner:
                 res = -res
             if CS.invert_bool in tick_cs:
                 res = res == 0
+            if CS.is_neg in tick_cs:
+                res = int(res < 0)
 
-        if (CS.if_out in tick_cs and int.from_bytes(self.m.cpu.acc) != 0) or (CS.if_out not in tick_cs):
+        if (CS.if_out in tick_cs and int.from_bytes(self.m.cpu.acc) != 0) or (
+            CS.if_out not in tick_cs
+        ):
             bytes_res = res.to_bytes(op_size, signed=True)
             if CS.out_acc in tick_cs:
                 self.m.cpu.acc = bytes_res
@@ -106,7 +112,7 @@ class Runner:
             if CS.out_ip in tick_cs:
                 self.m.cpu.ip = bytes_res
             if CS.out_io in tick_cs:
-                self.get_stream().write(bytes_res[-1].to_bytes(1, signed=True))
+                self.get_stream().write(bytes_res[-1:])
             if CS.out_mem in tick_cs:
                 self.m.memory.set(self.int_ptr(), bytes_res)
             if CS.out_stack in tick_cs:
@@ -116,35 +122,29 @@ class Runner:
         for tick_cs in instr.cs:
             self.m.clock.wait_cycles(1)
             self.exec_tick(tick_cs)
-            if config['interactive']:
-                print(self.m)
+            if config["interactive"]:
+                logging.debug(self.m)
                 input()
-            if config['debug']:
-                print(self.m.cpu)
+            logging.debug(self.m.cpu)
 
     def run(self) -> None:
         self.m.cpu.run = True
         while self.m.cpu.run:
-            if config['clear']:
-                # Now, to clear the screen
+            if config["clear"]:
                 cls()
-            
-            if config['debug']:
-                print('instruction fetch...')
-            self.m.cpu.cmd = self.m.memory.get(int.from_bytes(self.m.cpu.ip, signed=True), 8)
+
+            self.m.cpu.cmd = self.m.memory.get(
+                int.from_bytes(self.m.cpu.ip, signed=True), 8
+            )
             # self.exec_instr(instructions['load_cmd'])
-            
+
             tag = int.from_bytes(self.m.cpu.cmd[:4])
             opcode = opcode_by_tag[tag]
             instr = instructions[opcode]
 
-            if config['debug']:
-                print('exec...')
-                print(opcode, int.from_bytes(self.m.cpu.cmd[-4:]))
+            logging.debug(opcode + str(int.from_bytes(self.m.cpu.cmd[-4:])))
             self.exec_instr(instr)
-            if config['debug']:
-                print('inc ip...')
-            
-            self.m.cpu.ip = (int.from_bytes(self.m.cpu.ip,
-                              signed=True) + 8).to_bytes(8, signed=True)
+            self.m.cpu.ip = (int.from_bytes(self.m.cpu.ip, signed=True) + 8).to_bytes(
+                8, signed=True
+            )
             # self.exec_instr(instructions['inc_ip'])

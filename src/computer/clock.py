@@ -1,5 +1,6 @@
 import time
 
+
 class Clock:
     def __init__(self, frequency_hz: float):
         self.frequency_hz = frequency_hz

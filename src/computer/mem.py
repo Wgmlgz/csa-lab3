@@ -31,25 +31,36 @@ class Memory:
     def load_json(self, p: str):
         with open(p) as f:
             data = json.load(f)
-            instructions = data['instructions']
+            instructions = data["instructions"]
             self.load_instructions(instructions, 8)
 
-    def get(self, idx: int, size) -> bytes:
+    def get(self, idx: int, size) -> bytearray:
+        # if config['debug-mem']:
+        #     print('get', idx, size)
+
         if idx + size > self.n:
-            raise Exception('reach outside memory')
-        res = self.content[idx: idx + size]
+            raise Exception("reach outside memory")
+        res = self.content[idx : idx + size]
         return res
 
     def set(self, idx: int, val: bytes):
+        # if config['debug-mem'] or True:
+        #     print('set', idx, val)
         if idx + len(val) > self.n:
-            raise Exception('reach outside memory')
-        self.content[idx:idx+len(val)] = val
+            raise Exception("reach outside memory")
+        self.content[idx : idx + len(val)] = val
 
     def to_str_chunk(self, begin=0, len=0x40) -> str:
         s = ""
         chunk = 8
-        s += '\n'.join([f'{hex(begin + i * chunk):6}' + ':' + self.content[begin + i * chunk: begin + (i + 1) * chunk].hex()
-                        for i in range(len // chunk)])
+        s += "\n".join(
+            [
+                f"{hex(begin + i * chunk):6}"
+                + ":"
+                + self.content[begin + i * chunk : begin + (i + 1) * chunk].hex()
+                for i in range(len // chunk)
+            ]
+        )
         return s
 
     def __str__(self) -> str:
