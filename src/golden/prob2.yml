@@ -26,7 +26,12 @@ in_source: |-
 
   (print_n sum)
 in_stdin: ''
-out_log: ''
+out_log: |
+  INFO     root:machine.py:47 
+  INFO     root:machine.py:48 Ticks: 6417
+  INFO     root:machine.py:49 Instructions: 1600
+
+  INFO     root:machine.py:50 Cache-hit-rate: 98.49%
 out_stdout: |-
   ============================================================
   4613732

@@ -9,7 +9,12 @@ in_source: |-
       ()))))
   (print "Hello world!")
 in_stdin: ''
-out_log: ''
+out_log: |
+  INFO     root:machine.py:47 
+  INFO     root:machine.py:48 Ticks: 2162
+  INFO     root:machine.py:49 Instructions: 558
+
+  INFO     root:machine.py:50 Cache-hit-rate: 98.21%
 out_stdout: |-
   ============================================================
   Hello world!

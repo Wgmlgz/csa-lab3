@@ -1,6 +1,6 @@
 from typing import Optional
 from lang.exp import Exp, ParseException
-from lang.type_info import Type, undefined_type
+from lang.type_info import Ptr, Type, undefined_type
 from utils import tab
 
 
@@ -46,12 +46,21 @@ class Scope:
         self.types[id] = type_entry
 
     def get_type(self, id: str, exp: Exp) -> Type:
+        pointers = 0
+        while id.endswith('*'):
+            pointers += 1
+            id = id[0:-1]
+
+        
         if id in self.types:
-            return self.types[id]
+            result = self.types[id]
         elif self.parent is not None:
-            return self.parent.get_type(id, exp)
+            result = self.parent.get_type(id, exp)
         else:
             raise ParseException(f"Undefined type `{id}`", exp)
+        for i in range(pointers):
+            result = Ptr(result)
+        return result
 
     def __str__(self) -> str:
         if len(self.locals) == 0 and len(self.types) == 0:
@@ -241,6 +250,7 @@ class Block:
     ) -> tuple[list[Instruction | Object | int], list[Instruction | Object | int]]:
         local: list[Instruction | Object | int] = []
         glob: list[Instruction | Object | int] = []
+
         after_global: list[Instruction | Object | int] = []
         for entry in self.content:
             if isinstance(entry, Instruction):

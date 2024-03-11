@@ -23,7 +23,7 @@ class IntegratedMemorySystem:
         self.cache.flush()
 
 
-class Machine:
+class Computer:
     name: str
     memory: IntegratedMemorySystem
     cpu: CPU
@@ -35,12 +35,12 @@ class Machine:
     word_size: int
 
     def __init__(
-        self, name="AmogusPC", mem_size: int = 0x1000, stack: int = 0x1000, word_size=8
+        self, name="AmogusPC", mem_size: int = 0x3000, word_size=8
     ) -> None:
         self.name = name
         self.clock = Clock(1 * 1000 * 1000 * 1)
-        self.memory = IntegratedMemorySystem(self.clock, mem_size, 64 * 8, 64)
-        self.cpu = CPU(stack, main_ptr=0x0, reg_size=word_size)
+        self.memory = IntegratedMemorySystem(self.clock, mem_size, 64 * 16, 64)
+        self.cpu = CPU(mem_size, main_ptr=0x0, reg_size=word_size)
         self.stdin = Stream()
         self.stdout = Stream()
         self.word_size = word_size

@@ -15,12 +15,16 @@ dev:
 	python ./src/machine.py ./out.o.json ./examples/test.txt
 
 debug:
-	python ./src/translator.py ./examples/test.lsp
+	python ./src/translator.py ./examples/test.lsp -d
 	python ./src/machine.py ./out.o.json ./examples/test.txt -d
 
 interactive:
-	python ./src/translator.py ./examples/test.lsp
+	python ./src/translator.py ./examples/test.lsp -d
 	python ./src/machine.py ./out.o.json ./examples/test.txt -d -i
+
+cache:
+	python ./src/translator.py ./examples/test.lsp
+	python ./src/machine.py ./out.o.json ./examples/test.txt -m
 
 lint:
 	poetry run mypy ./src/machine.py

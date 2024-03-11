@@ -61,5 +61,6 @@ if __name__ == "__main__":
         else "out.o.json"
     )
     config["debug"] = "-d" in sys.argv or "--debug" in sys.argv
-
+    if config["debug"]:
+        logging.getLogger().setLevel(logging.DEBUG)
     main(input_file, target_file)

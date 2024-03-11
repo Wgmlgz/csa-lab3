@@ -23,25 +23,27 @@ class Cache:
         self.block_size = block_size
         self.num_blocks = cache_size // block_size
         self.cache: list[Optional[CacheBlock]] = [None] * self.num_blocks
+        self.hits = 0
+        self.misses = 0
 
     def __str__(self):
         total_memory_blocks = self.memory.n // self.block_size
-        representation = ["."] * total_memory_blocks
+        representation = [" "] * total_memory_blocks
 
         for block in self.cache:
             if block is not None:
                 block_index = (block.tag * self.block_size) // self.block_size
                 representation[block_index] = "|"
 
-        if total_memory_blocks > 100:
-            compact_representation = ""
-            scale_factor = total_memory_blocks // 100
-            for i in range(0, total_memory_blocks, scale_factor):
-                if "|" in representation[i : i + scale_factor]:
-                    compact_representation += "|"
-                else:
-                    compact_representation += "."
-            return compact_representation
+        # if total_memory_blocks > 100:
+        #     compact_representation = ""
+        #     scale_factor = total_memory_blocks // 100
+        #     for i in range(0, total_memory_blocks, scale_factor):
+        #         if "|" in representation[i : i + scale_factor]:
+        #             compact_representation += "|"
+        #         else:
+        #             compact_representation += "."
+        #     return compact_representation
 
         return "".join(representation)
 
@@ -54,8 +56,6 @@ class Cache:
 
     def get(self, address: int, size: int) -> bytes:
         result = bytearray()
-        if config["debug-mem"]:
-            logging.debug(self)
         while size > 0:
             block = self.get_block(address)
 
@@ -65,11 +65,13 @@ class Cache:
             if block is not None:
                 if config["debug-mem"]:
                     logging.debug("hit")
+                self.hits += 1
                 self.clock.wait_cycles(1)
                 result.extend(block.data[offset : offset + bytes_to_read])
             else:
                 if config["debug-mem"]:
-                    logging.debug("miss")
+                    logging.info("miss")
+                self.misses += 1
                 self.clock.wait_cycles(10)
 
                 start_address = (address // self.block_size) * self.block_size
@@ -96,11 +98,13 @@ class Cache:
 
             if current_block is not None:
                 if config["debug-mem"]:
-                    logging.debug("hit")
+                    logging.info("hit")
+                self.hits += 1
                 self.clock.wait_cycles(1)
             else:
                 if config["debug-mem"]:
-                    logging.debug("miss")
+                    logging.info("miss")
+                self.misses += 1
                 self.clock.wait_cycles(10)
 
                 lru_index = self.find_lru_block_index()
@@ -145,6 +149,8 @@ class Cache:
             start_address = (block.tag * self.block_size) % self.memory.n
             self.memory.set(start_address, block.data)
             block.dirty = False
+        if config["debug-mem"]:
+            print(self)
 
     def flush(self):
         for i in range(self.num_blocks):

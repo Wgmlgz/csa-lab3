@@ -1,6 +1,6 @@
 import logging
 from typing import Optional
-from computer.computer import Machine
+from computer.computer import Computer
 from computer.runner import Runner
 import sys
 import json
@@ -18,7 +18,7 @@ Usage: python machine.py <machine_code_file> [input_file] [-d/--debug] [-i/--int
 
 def main(machine_code_file: str, input_file: Optional[str]):
     try:
-        machine = Machine()
+        machine = Computer()
 
         # Loading machine code
         with open(machine_code_file, "r") as f:
@@ -44,6 +44,10 @@ def main(machine_code_file: str, input_file: Optional[str]):
 
         runner = Runner(machine)
         runner.run()
+        logging.info("")
+        logging.info(f"Ticks: {machine.clock.ticks}")
+        logging.info(f"Instructions: {runner.instructions}\n")
+        logging.info(f"Cache-hit-rate: {100 * (machine.memory.cache.hits / (machine.memory.cache.hits + machine.memory.cache.misses)):.2f}%")
         # print(runner.m.stdout.data.decode())
 
     except Exception as err:

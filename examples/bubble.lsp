@@ -1,8 +1,8 @@
 (import "./std")
 
-(let heap (mem int 900))
+(let heap (mem int 100))
 
-(let len 900)
+(let len 100)
 (def (arr ints))
 (pset (-> 'arr ptr) heap)
 (pset (-> 'arr len) len)
@@ -29,19 +29,23 @@
     ()))))
 
 
-(fn sum (arr ints) int
+(fn sort (arr ints)
   ((let i 0)
-  (let s 0)
-  (while (< i 30)
-    ((let j 0)
-    (while (< j 30) (
-      (set s (+ s (* (+ (. 'arr ptr) (* 8 (+ (* i 30) j))))))
+  (while (< i (. 'arr len))
+    ((let j (+ i 1))
+    (while (< j (. 'arr len)) (
+      (if (< (* (get arr j)) (* (get arr i)))
+        ((let t (* (get arr j)))
+        (pset (get arr j) (* (get arr i)))
+        (pset (get arr i) t))
+      ())
       (set j (+ j 1))
       ()))
     (set i (+ i 1))
-    ()))
-  s))
+    ()))))
 
+(print_ints arr)
 (fill arr)
 (print_ints arr)
-(print_n (sum arr))
+(sort arr)
+(print_ints arr)

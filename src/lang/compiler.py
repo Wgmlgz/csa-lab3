@@ -65,7 +65,7 @@ def compile_instr(exp: Exp, scope: Scope) -> Entry:
 
 
 # copy from a to b
-def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=False):
+def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=False, ptr_write=False):
     type_a = a.type
     type_b = b.type
 
@@ -73,8 +73,13 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
         if not isinstance(type_a, Ptr):
             raise ParseException(f"Expected pointer, but found `{type_a.id}`", exp)
         type_a = type_a.base
+    
+    if ptr_write:
+        if not isinstance(type_b, Ptr):
+            raise ParseException(f"Expected pointer, but found `{type_b.id}`", exp)
+        type_b = type_b.base
 
-    if type_a != type_b:
+    if type_a.id != type_b.id:
         raise ParseException(f"Types don't match `{type_a.id}` and `{type_b.id}`", exp)
     if a.obj.id == b.obj.id:
         return
@@ -90,8 +95,13 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
             block.content.append(Instruction("deref"))
         else:
             block.content.append(Instruction("local_get", OffsetObject(a.obj, done)))
-
-        block.content.append(Instruction("local_set", OffsetObject(b.obj, done)))
+        
+        if ptr_write:
+            if done != 0:
+                raise ParseException('Can only copy types of sizes 8, 4, 2, 1 by pointer', exp)
+            block.content.append(Instruction("write_by_local", b.obj))
+        else:
+            block.content.append(Instruction("local_set", OffsetObject(b.obj, done)))
         done += 8
 
     for shift in range((size - done) // 4):
@@ -101,8 +111,12 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
             block.content.append(Instruction("deref_4"))
         else:
             block.content.append(Instruction("local_get_4", OffsetObject(a.obj, done)))
-
-        block.content.append(Instruction("local_set_4", OffsetObject(b.obj, done)))
+        if ptr_write:
+            if done != 0:
+                raise ParseException('Can only copy types of sizes 8, 4, 2, 1 by pointer', exp)
+            block.content.append(Instruction("write_by_local", b.obj))
+        else:
+            block.content.append(Instruction("local_set_4", OffsetObject(b.obj, done)))
         done += 4
     for shift in range((size - done) // 2):
         if deref:
@@ -112,7 +126,12 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
         else:
             block.content.append(Instruction("local_get_2", OffsetObject(a.obj, done)))
 
-        block.content.append(Instruction("local_set_2", OffsetObject(b.obj, done)))
+        if ptr_write:
+            if done != 0:
+                raise ParseException('Can only copy types of sizes 8, 4, 2, 1 by pointer', exp)
+            block.content.append(Instruction("write_by_local", b.obj))
+        else:
+            block.content.append(Instruction("local_set_2", OffsetObject(b.obj, done)))
         done += 2
     for shift in range((size - done) // 1):
         if deref:
@@ -122,7 +141,12 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
         else:
             block.content.append(Instruction("local_get_1", OffsetObject(a.obj, done)))
 
-        block.content.append(Instruction("local_set_1", OffsetObject(b.obj, done)))
+        if ptr_write:
+            if done != 0:
+                raise ParseException('Can only copy types of sizes 8, 4, 2, 1 by pointer', exp)
+            block.content.append(Instruction("write_by_local", b.obj))
+        else:
+            block.content.append(Instruction("local_set_1", OffsetObject(b.obj, done)))
         done += 1
 
 
@@ -337,6 +361,32 @@ def compile_set(
     body = compile_block(child.children[2], parent, mod, var)
     return body
 
+def compile_pset(
+    exp: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
+) -> Block:
+    if len(exp.children) != 3:
+        raise ParseException("Expected 2 arguments e.g. `pset ptr val`", exp)
+    block = Block(parent)
+
+    ptr_calc = compile_block(exp.children[1], parent, mod)
+    val_calc = compile_block(exp.children[2], parent, mod)
+    block.scope.add('__tmp_ptr', ptr_calc.ret, exp)    
+    block.scope.add('__tmp_val', val_calc.ret, exp)    
+    
+    block.content.append(ptr_calc)
+    block.content.append(val_calc)
+                         
+    if not isinstance(ptr_calc.ret.type, Ptr):
+        raise ParseException('Expected ptr', exp.children[1])
+    
+    if ptr_calc.ret.type.base.id != val_calc.ret.type.id:
+        raise ParseException('types don\'t match', exp.children[1])
+    
+    block.ret.type = void_type
+    
+    insert_copy(block, val_calc.ret, ptr_calc.ret, exp, ptr_write=True)
+    return block
+
 
 def compile_type(exp: Exp, scope: Scope) -> tuple[str, Type]:
     if not (
@@ -415,7 +465,7 @@ def compile_fn(
     body = compile_block(exp.children[-1], block.scope, mod, block.ret)
     block.content.append(body)
 
-    if block.ret.type != ret_type:
+    if block.ret.type.id != ret_type.id:
         raise ParseException(
             f"Body return type `{body.ret.type.id}` don't match declaration type `{ret_type.id}`",
             exp.children[-1],
@@ -527,6 +577,38 @@ def compile_import(exp: Nested, mod: lang.module.Module) -> Block:
     return res.block
 
 
+def compile_mem(
+    exp: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
+) -> Block:
+    if len(exp.children) < 3:
+        raise ParseException(
+            f"Expected at least 3 arguments e.g. `mem type N`, found({len(exp.children)})",
+            exp,
+        )
+
+    if not isinstance(exp.children[1], IdLiteral):
+        raise ParseException("Expected type literal", exp.children[1])
+
+    if not isinstance(exp.children[2], IntLiteral):
+        raise ParseException("Expected int literal", exp.children[2])
+
+    type = parent.get_type(exp.children[1].val, exp.children[1])
+    length = exp.children[2].val
+    
+    block = Block(parent, ret)
+    
+    block.ret.type = Ptr(type)
+    begin_ptr = Object()
+    block.global_entries.append(begin_ptr)
+    bytes_str = str.encode("\0" * length * type.size)
+    block.global_entries.append(Constants(bytes_str))
+
+    block.content.append(Instruction("load", begin_ptr))
+    block.content.append(Instruction("local_set", block.ret.obj))
+
+    return block
+
+
 # def compile_var()
 def compile_action(
     id,
@@ -543,12 +625,16 @@ def compile_action(
         return compile_def(child, parent, mod, ret)
     elif id == "set":
         return compile_set(child, parent, mod, ret)
+    elif id == "pset":
+        return compile_pset(child, parent, mod, ret)
     elif id == "if":
         return compile_if(child, parent, mod, ret)
     elif id == "while":
         return compile_while(child, parent, mod, ret)
     elif id == "fn":
         return compile_fn(child, parent, mod, ret)
+    elif id == "mem":
+        return compile_mem(child, parent, mod, ret)
     elif id == "." or id == "->":
         return compile_get(id, child, parent, mod, ret)
     elif id in operators:

@@ -13,6 +13,11 @@ in_source: |-
 in_stdin: |-
   aaa
 out_log: |
+  INFO     root:machine.py:47 
+  INFO     root:machine.py:48 Ticks: 288
+  INFO     root:machine.py:49 Instructions: 70
+
+  INFO     root:machine.py:50 Cache-hit-rate: 93.33%
 out_stdout: |-
   ============================================================
   aaa

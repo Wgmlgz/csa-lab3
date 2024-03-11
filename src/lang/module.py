@@ -4,7 +4,7 @@ from lang.token import Token, tokenize
 from typing import Optional
 from pathlib import Path
 from lang.exp import Exp, ParseException, parse_exp
-from lang.type_info import void_type, int_type, u8_type, str_type
+from lang.type_info import void_type, int_type, u8_type, str_type, ints_type
 from utils import config
 
 
@@ -33,6 +33,7 @@ class Module:
                 global_scope.add_type("int", int_type, None)
                 global_scope.add_type("u8", u8_type, None)
                 global_scope.add_type("str", str_type, None)
+                global_scope.add_type("ints", ints_type, None)
                 self.global_scope = global_scope
             else:
                 self.global_scope = parent.global_scope

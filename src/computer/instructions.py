@@ -22,6 +22,13 @@ instructions = {
     "deref_4": Microcode([[CS.in_acc, CS.out_ptr], [CS.in_mem, CS.s_4, CS.out_acc]]),
     "deref_2": Microcode([[CS.in_acc, CS.out_ptr], [CS.in_mem, CS.s_2, CS.out_acc]]),
     "deref_1": Microcode([[CS.in_acc, CS.out_ptr], [CS.in_mem, CS.s_1, CS.out_acc]]),
+    
+    
+    "write_by_local": Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.in_mem, CS.out_ptr], [CS.in_acc, CS.out_mem]]),
+    "write_by_local_4": Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.in_mem, CS.out_ptr], [CS.in_acc, CS.s_4, CS.out_mem]]),
+    "write_by_local_2": Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.in_mem, CS.out_ptr], [CS.in_acc, CS.s_2, CS.out_mem]]),
+    "write_by_local_1": Microcode([[CS.in_stack, CS.in_cmd, CS.out_ptr], [CS.in_mem, CS.out_ptr], [CS.in_acc, CS.s_1, CS.out_mem]]),
+
     # 'set': Microcode([[CS.in_acc, CS.out_mem]]),
     # acc = io
     # 'read': Microcode([[CS.in_io, CS.out_acc]]),

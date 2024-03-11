@@ -1,5 +1,5 @@
 from computer.io import Stream
-from computer.computer import Machine
+from computer.computer import Computer
 from computer.microcode import CS, Microcode
 from computer.instructions import opcode_by_tag, instructions
 from utils import config
@@ -12,8 +12,9 @@ def cls():
 
 
 class Runner:
-    def __init__(self, m: Machine) -> None:
+    def __init__(self, m: Computer) -> None:
         self.m = m
+        self.instructions = 0
 
     def int_ptr(self) -> int:
         return int.from_bytes(self.m.cpu.ptr)
@@ -126,6 +127,7 @@ class Runner:
                 logging.debug(self.m)
                 input()
             logging.debug(self.m.cpu)
+        self.instructions += 1
 
     def run(self) -> None:
         self.m.cpu.run = True

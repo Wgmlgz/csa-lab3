@@ -28,7 +28,7 @@
       (while cur (
         (print_byte (+ (% (/ n cur) base) zero))
         (set cur (/ cur base)) ))))
-  (nl)))
+  ()))
 
 (fn factorial (n int) int  
   (if (= n 0) 1 (* n (factorial (- n 1)))))
