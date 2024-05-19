@@ -100,8 +100,8 @@ class Runner:
             if CS.is_neg in tick_cs:
                 res = int(res < 0)
 
-        if (CS.if_out in tick_cs and int.from_bytes(self.m.cpu.acc) != 0) or (
-            CS.if_out not in tick_cs
+        if (CS.if_acc in tick_cs and int.from_bytes(self.m.cpu.acc) != 0) or (
+            CS.if_acc not in tick_cs
         ):
             bytes_res = res.to_bytes(op_size, signed=True)
             if CS.out_acc in tick_cs:
@@ -123,8 +123,9 @@ class Runner:
         for tick_cs in instr.cs:
             self.m.clock.wait_cycles(1)
             self.exec_tick(tick_cs)
+            if config["debug"]:
+                logging.info(self.m)
             if config["interactive"]:
-                logging.debug(self.m)
                 input()
             logging.debug(self.m.cpu)
         self.instructions += 1

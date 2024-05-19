@@ -23,7 +23,8 @@ def main(machine_code_file: str, input_file: Optional[str]):
         # Loading machine code
         with open(machine_code_file, "r") as f:
             instructions = json.load(f)
-        machine.memory.memory.load_instructions(
+            instr_len = len(instructions["instructions"])
+        machine.memory.load_instructions(
             instructions["instructions"], machine.word_size
         )
 
@@ -45,9 +46,10 @@ def main(machine_code_file: str, input_file: Optional[str]):
         runner = Runner(machine)
         runner.run()
         logging.info("")
+        logging.info(f"code инстр: {instr_len}")
         logging.info(f"Ticks: {machine.clock.ticks}")
         logging.info(f"Instructions: {runner.instructions}\n")
-        logging.info(f"Cache-hit-rate: {100 * (machine.memory.cache.hits / (machine.memory.cache.hits + machine.memory.cache.misses)):.2f}%")
+        # logging.info(f"Cache-hit-rate: {100 * (machine.memory.cache.hits / (machine.memory.cache.hits + machine.memory.cache.misses)):.2f}%")
         # print(runner.m.stdout.data.decode())
 
     except Exception as err:

@@ -58,7 +58,7 @@ class Callable(Type):
 
 undefined_type = Type("undefined", 666)
 void_type = Type("()", 0)
-u8_type = Type("u8", 1)
+char_type = Type("char", 1)
 int_type = Type("int", 8)
-str_type = Struct("str", {"ptr": Ptr(u8_type), "len": int_type})
+str_type = Struct("str", {"ptr": Ptr(char_type), "len": int_type})
 ints_type = Struct("ints", {"ptr": Ptr(int_type), "len": int_type})

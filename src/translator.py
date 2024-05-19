@@ -15,6 +15,10 @@ Usage: python translator.py <input_file> [target_file] [-d/--debug]
 
 
 def main(input_file: str, target_file: str):
+    with open(input_file, "r") as f:
+        lines_len = len(f.readlines())
+    logging.info(f"LoC: {lines_len}")
+    
     if config["debug"]:
         logging.debug("Translation completed successfully.")
     try:
@@ -54,7 +58,6 @@ if __name__ == "__main__":
         exit(1)
 
     input_file = sys.argv[1]
-
     target_file = (
         sys.argv[2]
         if len(sys.argv) > 2 and not sys.argv[2].startswith("-")

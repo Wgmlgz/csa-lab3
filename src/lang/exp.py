@@ -108,8 +108,8 @@ def parse_atom(tokens: list[Token], cursor: int) -> tuple:
             type = "u32"
         if "u16" in val:
             type = "u16"
-        if "u8" in val:
-            type = "u8"
+        if "char" in val:
+            type = "char"
         if "i64" in val:
             type = "i64"
         if "i32" in val:

@@ -22,6 +22,14 @@ interactive:
 	python ./src/translator.py ./examples/test.lsp -d
 	python ./src/machine.py ./out.o.json ./examples/test.txt -d -i
 
+cat:
+	python ./src/translator.py ./examples/cat.lsp
+	python ./src/machine.py ./out.o.json ./examples/test.txt -d
+
+bubble:
+	python ./src/translator.py ./examples/bubble.lsp
+	python ./src/machine.py ./out.o.json ./examples/test.txt
+
 cache:
 	python ./src/translator.py ./examples/test.lsp
 	python ./src/machine.py ./out.o.json ./examples/test.txt -m

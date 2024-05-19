@@ -101,11 +101,11 @@ instructions = {
     # jump
     "jmp_acc": Microcode([[CS.in_acc, CS.dec_8, CS.out_ip]]),
     "jmp": Microcode([[CS.in_cmd, CS.dec_8, CS.out_ip]]),
-    "jmp_if": Microcode([[CS.in_cmd, CS.dec_8, CS.if_out, CS.out_ip]]),
+    "jmp_if": Microcode([[CS.in_cmd, CS.dec_8, CS.if_acc, CS.out_ip]]),
     "jmp_if_false": Microcode(
         [
             [CS.in_acc, CS.invert_bool, CS.out_acc],
-            [CS.in_cmd, CS.dec_8, CS.if_out, CS.out_ip],
+            [CS.in_cmd, CS.dec_8, CS.if_acc, CS.out_ip],
         ]
     ),
     # math

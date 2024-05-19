@@ -36,11 +36,11 @@ class CS(enumerate):
     invert = auto()
     invert_bool = auto()
     neg = auto()
-
-    if_out = auto()
-
     div = auto()
     rem = auto()
+
+    if_acc = auto()
+
 
     s_8 = auto()
     s_4 = auto()
