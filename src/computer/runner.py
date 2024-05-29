@@ -124,7 +124,8 @@ class Runner:
             self.m.clock.wait_cycles(1)
             self.exec_tick(tick_cs)
             if config["debug"]:
-                logging.info(self.m)
+                if self.m.clock.ticks < 1000:
+                  logging.info(self.m)
             if config["interactive"]:
                 input()
             logging.debug(self.m.cpu)

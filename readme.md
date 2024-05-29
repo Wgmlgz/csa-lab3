@@ -6,7 +6,7 @@
 lisp -> asm | acc | neum | hw | instr | struct | stream | port | pstr | prob2 | cache
 ```
 
-С усложнением
+Базовый вариант
 
 ## Язык программирования
 
@@ -376,15 +376,119 @@ Usage: python machine.py <machine_code_file> [input_file] [-d/--debug] [-i/--int
 
 Тестирование выполняется при помощи golden test-ов.
 
-1. Тесты реализованы в: [src/golden](./src/golden/)
+Тесты реализованы в: [src/golden](./src/golden/)
+
+- [hello](./src/golden/hello.yml)
+- [cat](./src/golden/cat.yml)
+- [hello_user_name](./src/golden/hello_user_name.yml)
+- [prob2](./src/golden/prob2.yml)
+- [bubble](./src/golden/bubble.yml)
 
 Запустить тесты: `make test`
 
-Обновить конфигурацию golden tests:  `make test-update-golden`
+Обновить конфигурацию golden tests: `make test-update-golden`
 
-CI при помощи Github Action:
+### Подробное описание одной из программ:
 
-``` yaml
+Данная программа реализует сортировку пузырьком для массива заполненного случайными числами.
+
+```lisp
+  ;; Объявление helper функций
+  ;; Функция для вывода символа
+  (fn print_byte (n int) ((local_get n) (out 1)))
+
+  ;; Функция для вывода строки
+  (fn print_str (s str)
+    ((let i 0)
+    (while (- i (. 's len)) (
+      (let t (* (+ (. 's ptr) i)))
+      (local_get_1 t)
+      (out 1)
+      (set i (+ i 1))
+      ()))))
+
+  ;; Функция для вывода \n
+  (fn nl (print_str "\n"))
+
+  ;; Функция для числа
+  (fn print_n (n int)
+    ((let cur 100000000)
+    (let base 10)
+    (let zero 48)
+    (if (= n 0)
+      (print_str "0")
+      ((while (= 0 (% (/ n cur) base)) (
+          (set cur (/ cur base)) ))
+        (while cur (
+          (print_byte (+ (% (/ n cur) base) zero))
+          (set cur (/ cur base)) ))))
+    ()))
+
+  ;; Функция для удобного получения указателя в массиве
+  (fn get (arr ints) (i int) int* (+ (. 'arr ptr) (* i 8)))
+
+  ;; Функция вывода массива
+  (fn print_ints (arr ints)
+    ((print_str "[")
+    (let i 0)
+    (while (< i (. 'arr len)) (
+      (if i (print_str ", ") ())
+      (print_n (* (get arr i)))
+      (set i (+ i 1))
+      ()
+    ))
+    (print_str "]\n")))
+
+  ;; Функция заполнения массива псевдо-случайными числами
+  (fn fill (arr ints)
+    ((let i 0)
+    (while (< i (. 'arr len)) (
+      (pset (get arr i) (% (* (+ i 666) 666342123) 100))
+      (set i (+ i 1))
+      ()))))
+
+  ;; Сортировка пузырьком
+  (fn sort (arr ints)
+    ((let i 0)
+    (while (< i (. 'arr len))
+      ((let j (+ i 1))
+      (while (< j (. 'arr len)) (
+        (if (< (* (get arr j)) (* (get arr i)))
+          ((let t (* (get arr j)))
+          (pset (get arr j) (* (get arr i)))
+          (pset (get arr i) t))
+        ())
+        (set j (+ j 1))
+        ()))
+      (set i (+ i 1))
+      ()))))
+
+
+  ;; Основная логика программы
+  (let heap (mem int 50)) ;; Аллокация памяти для массива int размера 50
+  (let len 50) ;; Объявление переменной для длины
+  (def (arr ints)) ;; Объявление массива arr типа ints
+  (pset (-> 'arr ptr) heap) ;; Присваивание указателя на аллоцированую память
+  (pset (-> 'arr len) len) ;; Присваивание длины
+
+  (print_ints arr) ;; вывод пустого массива
+  (fill arr) ;; заполнение случайными числами
+  (print_ints arr) ;; вывод
+  (sort arr) ;; сортировка пузырьком
+  (print_ints arr) ;; вывод
+```
+
+Вывод программы:
+
+```py
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[18, 41, 64, 87, 10, 33, 56, 79, 2, 25, 48, 71, 94, 17, 40, 63, 86, 9, 32, 55, 78, 1, 24, 47, 70, 93, 16, 39, 62, 85, 8, 31, 54, 77, 0, 23, 46, 69, 92, 15, 38, 61, 84, 7, 30, 53, 76, 99, 22, 45]
+[0, 1, 2, 7, 8, 9, 10, 15, 16, 17, 18, 22, 23, 24, 25, 30, 31, 32, 33, 38, 39, 40, 41, 45, 46, 47, 48, 53, 54, 55, 56, 61, 62, 63, 64, 69, 70, 71, 76, 77, 78, 79, 84, 85, 86, 87, 92, 93, 94, 99]
+```
+
+### CI при помощи Github Action:
+
+```yaml
 name: Python CI
 
 on:
@@ -392,14 +496,14 @@ on:
     branches:
       - main
     paths:
-      - ".github/workflows/*"
-      - "python/**"
+      - '.github/workflows/*'
+      - 'python/**'
   pull_request:
     branches:
       - main
     paths:
-      - ".github/workflows/*"
-      - "python/**"
+      - '.github/workflows/*'
+      - 'python/**'
 
 defaults:
   run:
@@ -461,7 +565,7 @@ jobs:
 
 Пример использования и журнал работы процессора на примере `cat`:
 
-``` shell
+```shell
 ❯ make cat
 python ./src/translator.py ./examples/cat.lsp
 python ./src/machine.py ./out.o.json ./examples/test.txt -d
@@ -517,8 +621,8 @@ INFO:root:Instructions: 106
 
 Пример проверки исходного кода:
 
-``` shell
-csa-lab3 on  main [=✘!+?] is 📦 v1.0.0 via  v20.12.2 via 🐍 v3.11.5 (csa-lab3-py3.11) on ☁️  (us-east-1) 
+```shell
+csa-lab3 on  main [=✘!+?] is 📦 v1.0.0 via  v20.12.2 via 🐍 v3.11.5 (csa-lab3-py3.11) on ☁️  (us-east-1)
 ❯ make test
 poetry run pytest -v
 ============================ test session starts =============================
@@ -526,7 +630,7 @@ platform darwin -- Python 3.11.5, pytest-8.0.2, pluggy-1.4.0 -- /Users/wgmlgz/Li
 cachedir: .pytest_cache
 rootdir: /Users/wgmlgz/csa-lab3
 plugins: golden-0.2.2
-collected 4 items                                                            
+collected 4 items
 
 src/golden_test.py::test_translator_and_machine[golden/cat.yml] PASSED [ 25%]
 src/golden_test.py::test_translator_and_machine[golden/prob2.yml] PASSED [ 50%]
@@ -535,7 +639,7 @@ src/golden_test.py::test_translator_and_machine[golden/bubble.yml] PASSED [100%]
 
 ============================= 4 passed in 37.56s =============================
 csa-lab3-py3.11
-csa-lab3 on  main [=✘!+?] is 📦 v1.0.0 via  v20.12.2 via 🐍 v3.11.5 (csa-lab3-py3.11) on ☁️  (us-east-1) took 37s 
+csa-lab3 on  main [=✘!+?] is 📦 v1.0.0 via  v20.12.2 via 🐍 v3.11.5 (csa-lab3-py3.11) on ☁️  (us-east-1) took 37s
 ❯ make lint
 poetry run mypy ./src/machine.py
 Success: no issues found in 1 source file
@@ -545,8 +649,12 @@ poetry run ruff check ./src
 csa-lab3-py3.11
 ```
 
-```text
-| ФИО                            | алг   | LoC | code байт | code инстр. | инстр. | такт. | вариант |
-| Мацюк Владимир Николаевич | hello | ... | -         | ...         | ...    | ...   | ...     |
-| Мацюк Владимир Николаевич | cat   | 1   | -         | 6           | 15     | 28    | ...     |
+```txt
+| ФИО                       | алг             | LoC | code байт | code инстр. | инстр. | такт.  | вариант                                                                               |
+| ------------------------- | --------------- | --- | --------- | ----------- | ------ | ------ | ------------------------------------------------------------------------------------- |
+| Мацюк Владимир Николаевич | hello           | 9   | -         | 70          | 558    | 997    | lisp -> asm | acc | neum | hw | instr | struct | stream | port | pstr | prob2 | cache |
+| Мацюк Владимир Николаевич | cat             | 11  | -         | 19          | 70     | 120    | lisp -> asm | acc | neum | hw | instr | struct | stream | port | pstr | prob2 | cache |
+| Мацюк Владимир Николаевич | hello_user_name | 47  | -         | 1053        | 2136   | 3795   | lisp -> asm | acc | neum | hw | instr | struct | stream | port | pstr | prob2 | cache |
+| Мацюк Владимир Николаевич | prob2           | 26  | -         | 148         | 1600   | 3037   | lisp -> asm | acc | neum | hw | instr | struct | stream | port | pstr | prob2 | cache |
+| Мацюк Владимир Николаевич | bubble          | 79  | -         | 987         | 296130 | 528045 | lisp -> asm | acc | neum | hw | instr | struct | stream | port | pstr | prob2 | cache |
 ```

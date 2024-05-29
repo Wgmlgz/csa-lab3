@@ -26,6 +26,10 @@ cat:
 	python ./src/translator.py ./examples/cat.lsp
 	python ./src/machine.py ./out.o.json ./examples/test.txt -d
 
+hello_user_name:
+	python ./src/translator.py ./examples/hello_user_name.lsp
+	python ./src/machine.py ./out.o.json ./examples/test.txt
+
 bubble:
 	python ./src/translator.py ./examples/bubble.lsp
 	python ./src/machine.py ./out.o.json ./examples/test.txt
