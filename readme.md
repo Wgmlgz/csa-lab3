@@ -369,7 +369,7 @@ Usage: python machine.py <machine_code_file> [input_file] [-d/--debug] [-i/--int
 ![ControlUnit](ControlUnit.jpg)
 
 Схема Data Path:
-
+![DataPath](DataPath.png)
 ![DataPath](DataPath.jpg)
 
 ## Тестирование
