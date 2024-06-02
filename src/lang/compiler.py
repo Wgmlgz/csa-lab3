@@ -65,7 +65,9 @@ def compile_instr(exp: Exp, scope: Scope) -> Entry:
 
 
 # copy from a to b
-def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=False, ptr_write=False):
+def insert_copy(
+    block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=False, ptr_write=False
+):
     type_a = a.type
     type_b = b.type
 
@@ -73,7 +75,7 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
         if not isinstance(type_a, Ptr):
             raise ParseException(f"Expected pointer, but found `{type_a.id}`", exp)
         type_a = type_a.base
-    
+
     if ptr_write:
         if not isinstance(type_b, Ptr):
             raise ParseException(f"Expected pointer, but found `{type_b.id}`", exp)
@@ -95,10 +97,12 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
             block.content.append(Instruction("deref"))
         else:
             block.content.append(Instruction("local_get", OffsetObject(a.obj, done)))
-        
+
         if ptr_write:
             if done != 0:
-                raise ParseException('Can only copy types of sizes 8, 4, 2, 1 by pointer', exp)
+                raise ParseException(
+                    "Can only copy types of sizes 8, 4, 2, 1 by pointer", exp
+                )
             block.content.append(Instruction("write_by_local", b.obj))
         else:
             block.content.append(Instruction("local_set", OffsetObject(b.obj, done)))
@@ -113,7 +117,9 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
             block.content.append(Instruction("local_get_4", OffsetObject(a.obj, done)))
         if ptr_write:
             if done != 0:
-                raise ParseException('Can only copy types of sizes 8, 4, 2, 1 by pointer', exp)
+                raise ParseException(
+                    "Can only copy types of sizes 8, 4, 2, 1 by pointer", exp
+                )
             block.content.append(Instruction("write_by_local", b.obj))
         else:
             block.content.append(Instruction("local_set_4", OffsetObject(b.obj, done)))
@@ -128,7 +134,9 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
 
         if ptr_write:
             if done != 0:
-                raise ParseException('Can only copy types of sizes 8, 4, 2, 1 by pointer', exp)
+                raise ParseException(
+                    "Can only copy types of sizes 8, 4, 2, 1 by pointer", exp
+                )
             block.content.append(Instruction("write_by_local", b.obj))
         else:
             block.content.append(Instruction("local_set_2", OffsetObject(b.obj, done)))
@@ -143,7 +151,9 @@ def insert_copy(block: Block, a: ScopeEntry, b: ScopeEntry, exp: Exp, deref=Fals
 
         if ptr_write:
             if done != 0:
-                raise ParseException('Can only copy types of sizes 8, 4, 2, 1 by pointer', exp)
+                raise ParseException(
+                    "Can only copy types of sizes 8, 4, 2, 1 by pointer", exp
+                )
             block.content.append(Instruction("write_by_local", b.obj))
         else:
             block.content.append(Instruction("local_set_1", OffsetObject(b.obj, done)))
@@ -361,6 +371,7 @@ def compile_set(
     body = compile_block(child.children[2], parent, mod, var)
     return body
 
+
 def compile_pset(
     exp: Nested, parent: Scope, mod: lang.module.Module, ret: ScopeEntry | None = None
 ) -> Block:
@@ -370,20 +381,20 @@ def compile_pset(
 
     ptr_calc = compile_block(exp.children[1], parent, mod)
     val_calc = compile_block(exp.children[2], parent, mod)
-    block.scope.add('__tmp_ptr', ptr_calc.ret, exp)    
-    block.scope.add('__tmp_val', val_calc.ret, exp)    
-    
+    block.scope.add("__tmp_ptr", ptr_calc.ret, exp)
+    block.scope.add("__tmp_val", val_calc.ret, exp)
+
     block.content.append(ptr_calc)
     block.content.append(val_calc)
-                         
+
     if not isinstance(ptr_calc.ret.type, Ptr):
-        raise ParseException('Expected ptr', exp.children[1])
-    
+        raise ParseException("Expected ptr", exp.children[1])
+
     if ptr_calc.ret.type.base.id != val_calc.ret.type.id:
-        raise ParseException('types don\'t match', exp.children[1])
-    
+        raise ParseException("types don't match", exp.children[1])
+
     block.ret.type = void_type
-    
+
     insert_copy(block, val_calc.ret, ptr_calc.ret, exp, ptr_write=True)
     return block
 
@@ -594,9 +605,9 @@ def compile_mem(
 
     type = parent.get_type(exp.children[1].val, exp.children[1])
     length = exp.children[2].val
-    
+
     block = Block(parent, ret)
-    
+
     block.ret.type = Ptr(type)
     begin_ptr = Object()
     block.global_entries.append(begin_ptr)

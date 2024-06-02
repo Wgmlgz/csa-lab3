@@ -18,7 +18,7 @@ def main(input_file: str, target_file: str):
     with open(input_file, "r") as f:
         lines_len = len(f.readlines())
     logging.info(f"LoC: {lines_len}")
-    
+
     if config["debug"]:
         logging.debug("Translation completed successfully.")
     try:

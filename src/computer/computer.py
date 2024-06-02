@@ -32,9 +32,7 @@ class Computer:
     descriptors: dict[int, Stream]
     word_size: int
 
-    def __init__(
-        self, name="AmogusPC", mem_size: int = 0x3000, word_size=8
-    ) -> None:
+    def __init__(self, name="AmogusPC", mem_size: int = 0x3000, word_size=8) -> None:
         self.name = name
         self.clock = Clock(1 * 1000 * 1000 * 1)
         self.memory = Memory(mem_size)

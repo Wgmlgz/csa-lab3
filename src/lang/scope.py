@@ -47,11 +47,10 @@ class Scope:
 
     def get_type(self, id: str, exp: Exp) -> Type:
         pointers = 0
-        while id.endswith('*'):
+        while id.endswith("*"):
             pointers += 1
             id = id[0:-1]
 
-        
         if id in self.types:
             result = self.types[id]
         elif self.parent is not None:

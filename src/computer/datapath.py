@@ -11,6 +11,7 @@ import os
 def cls():
     os.system("cls" if os.name == "nt" else "clear")
 
+
 # class IntegratedMemorySystem:
 #     def __init__(
 #         self, clock: Clock, memory_size: int, cache_size: int, block_size: int
@@ -37,7 +38,7 @@ class DataPath:
 
     descriptors: dict[int, Stream]
     word_size: int
-    
+
     acc: bytes
     ip: bytes
     ptr: bytes
@@ -56,7 +57,7 @@ class DataPath:
         self.name = name
         self.clock = Clock(1 * 1000 * 1000 * 1)
         self.memory = Memory(mem_size)
-        
+
         self.acc = int(0).to_bytes(word_size)
         self.ip = int(0).to_bytes(word_size)
         self.ptr = int(0).to_bytes(word_size)
@@ -68,7 +69,6 @@ class DataPath:
         self.word_size = word_size
 
         self.descriptors = {0: self.stdin, 1: self.stdout}
-    
 
     def __str__(self) -> str:
         s = ""
@@ -209,9 +209,7 @@ class DataPath:
             if config["clear"]:
                 cls()
 
-            self.cmd = self.memory.get(
-                int.from_bytes(self.ip, signed=True), 8
-            )
+            self.cmd = self.memory.get(int.from_bytes(self.ip, signed=True), 8)
             # self.exec_instr(instructions['load_cmd'])
 
             tag = int.from_bytes(self.cmd[:4])
@@ -219,7 +217,7 @@ class DataPath:
             instr = instructions[opcode]
 
             logging.debug(opcode + str(int.from_bytes(self.cmd[-4:])))
-            self.exec_instr(instr)  
+            self.exec_instr(instr)
             self.ip = (int.from_bytes(self.ip, signed=True) + 8).to_bytes(
                 8, signed=True
             )

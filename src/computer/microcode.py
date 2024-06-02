@@ -41,7 +41,6 @@ class CS(enumerate):
 
     if_acc = auto()
 
-
     s_8 = auto()
     s_4 = auto()
     s_2 = auto()
